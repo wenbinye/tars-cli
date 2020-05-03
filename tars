@@ -1,0 +1,24 @@
+#!/usr/bin/env php
+<?php
+
+use Symfony\Component\Console\Application;
+use wenbinye\tars\cli\commands\ConfigCommand;
+use wenbinye\tars\cli\commands\PatchCommand;
+use wenbinye\tars\cli\commands\PatchUploadCommand;
+use wenbinye\tars\cli\commands\ServerCommand;
+use wenbinye\tars\cli\commands\ServerDeployCommand;
+
+foreach ([__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php'] as $file) {
+    if (file_exists($file)) {
+        require $file;
+        break;
+    }
+}
+
+$application = new Application("tars", "@version@");
+$application->add(new ConfigCommand());
+$application->add(new ServerCommand());
+$application->add(new ServerDeployCommand());
+$application->add(new PatchCommand());
+$application->add(new PatchUploadCommand());
+$application->run();
