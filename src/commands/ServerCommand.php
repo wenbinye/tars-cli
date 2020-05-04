@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
-
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
@@ -12,15 +12,16 @@ class ServerCommand extends AbstractCommand
     protected function configure(): void
     {
         parent::configure();
-        $this->addOption("all", "a", InputOption::VALUE_NONE, "Display all application include tars");
-        $this->addOption("app", null, InputOption::VALUE_REQUIRED, "Display server of the app");
-        $this->addArgument('server', InputArgument::OPTIONAL, "Server id or name");
-        $this->setName("server");
+        $this->setName('server');
+        $this->setDescription('Lists server by app or id');
+        $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Display all application include tars');
+        $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'Display server of the app');
+        $this->addArgument('server', InputArgument::OPTIONAL, 'Server id or name');
     }
 
     protected function handle(): void
     {
-        if ($this->input->getOption("app")
+        if ($this->input->getOption('app')
             || $this->input->getArgument('server')) {
             $this->listAppServers();
         } else {
@@ -31,13 +32,13 @@ class ServerCommand extends AbstractCommand
     private function listServers(): void
     {
         $table = $this->createTable(['Server']);
-        $includeTars = $this->input->getOption("all");
+        $includeTars = $this->input->getOption('all');
 
         foreach ($this->getTarsClient()->getServerNames() as $server) {
-            if (!$includeTars && $server->getApplication() === 'tars') {
+            if (!$includeTars && 'tars' === $server->getApplication()) {
                 continue;
             }
-            $table->addRow([(string)$server]);
+            $table->addRow([(string) $server]);
         }
         $table->render();
     }
@@ -48,19 +49,19 @@ class ServerCommand extends AbstractCommand
         if (!empty($serverId)) {
             $servers = [$this->getTarsClient()->getServer($serverId)];
         } else {
-            $app = $this->input->getOption("app");
+            $app = $this->input->getOption('app');
             $servers = $this->getTarsClient()->getServers($app);
         }
         $table = $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At']);
         foreach ($servers as $server) {
             $table->addRow([$server->getId(),
-                (string)$server,
+                (string) $server,
                 $server->getNodeName(),
                 $this->stateDesc($server->getSettingState()),
                 $this->stateDesc($server->getPresentState()),
                 $server->getProcessId(),
                 $server->getPatchVersion(),
-                $server->getPatchTime() ? $server->getPatchTime()->toDateTimeString() : '']);
+                $server->getPatchTime() ? $server->getPatchTime()->toDateTimeString() : '', ]);
         }
         $table->render();
     }
@@ -68,9 +69,11 @@ class ServerCommand extends AbstractCommand
     private function stateDesc(string $state): string
     {
         if (!empty($state)) {
-            $tag = $state === 'active' ? 'info' : 'error';
+            $tag = 'active' === $state ? 'info' : 'error';
+
             return "<$tag>$state</$tag>";
         }
+
         return $state;
     }
 }

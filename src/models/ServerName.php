@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace wenbinye\tars\cli\models;
-
 
 class ServerName
 {
@@ -18,8 +18,6 @@ class ServerName
 
     /**
      * ServerName constructor.
-     * @param string $application
-     * @param string $serverName
      */
     public function __construct(string $application, string $serverName)
     {
@@ -27,17 +25,11 @@ class ServerName
         $this->serverName = $serverName;
     }
 
-    /**
-     * @return string
-     */
     public function getApplication(): string
     {
         return $this->application;
     }
 
-    /**
-     * @return string
-     */
     public function getServerName(): string
     {
         return $this->serverName;
@@ -45,15 +37,16 @@ class ServerName
 
     public static function fromString(string $name): self
     {
-        if (strpos($name, '.') === false) {
+        if (false === strpos($name, '.')) {
             throw new \InvalidArgumentException("Invalid server name: $name");
         }
         [$app, $server] = explode('.', $name, 2);
+
         return new self($app, $server);
     }
 
     public function __toString()
     {
-        return $this->application . '.' . $this->serverName;
+        return $this->application.'.'.$this->serverName;
     }
 }

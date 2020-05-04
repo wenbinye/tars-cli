@@ -12,5 +12,8 @@
     "monolog/monolog": "^1.0",
     "nesbot/carbon": "^2.0",
     "guzzlehttp/guzzle": "^6.0"
+  },
+  "require-dev": {
+    "winwin/composer-phpcs-plugin": "^0.1"
   }
 }

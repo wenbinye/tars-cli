@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 namespace wenbinye\tars\cli\models;
 
@@ -72,33 +73,21 @@ class Server
      */
     private $presentState;
 
-    /**
-     * @return int
-     */
     public function getId(): int
     {
         return $this->id;
     }
 
-    /**
-     * @param int $id
-     */
     public function setId(int $id): void
     {
         $this->id = $id;
     }
 
-    /**
-     * @return string
-     */
     public function getApplication(): string
     {
         return $this->server->getApplication();
     }
 
-    /**
-     * @return string
-     */
     public function getServerName(): string
     {
         return $this->server->getServerName();
@@ -109,105 +98,66 @@ class Server
         return $this->server;
     }
 
-    /**
-     * @param ServerName $server
-     */
     public function setServer(ServerName $server): void
     {
         $this->server = $server;
     }
 
-    /**
-     * @return string
-     */
     public function getNodeName(): string
     {
         return $this->nodeName;
     }
 
-    /**
-     * @param string $nodeName
-     */
     public function setNodeName(string $nodeName): void
     {
         $this->nodeName = $nodeName;
     }
 
-    /**
-     * @return string
-     */
     public function getServerType(): string
     {
         return $this->serverType;
     }
 
-    /**
-     * @param string $serverType
-     */
     public function setServerType(string $serverType): void
     {
         $this->serverType = $serverType;
     }
 
-    /**
-     * @return bool
-     */
     public function isEnableSet(): bool
     {
         return $this->enableSet;
     }
 
-    /**
-     * @param bool $enableSet
-     */
     public function setEnableSet(bool $enableSet): void
     {
         $this->enableSet = $enableSet;
     }
 
-    /**
-     * @return string
-     */
     public function getTemplateName(): string
     {
         return $this->templateName;
     }
 
-    /**
-     * @param string $templateName
-     */
     public function setTemplateName(string $templateName): void
     {
         $this->templateName = $templateName;
     }
 
-    /**
-     * @return int
-     */
     public function getAsyncThreadNum(): int
     {
         return $this->asyncThreadNum;
     }
 
-    /**
-     * @param int $asyncThreadNum
-     */
     public function setAsyncThreadNum(int $asyncThreadNum): void
     {
         $this->asyncThreadNum = $asyncThreadNum;
     }
 
-    /**
-     * @return int
-     */
     public function getPatchVersion(): int
     {
         return $this->patchVersion;
     }
 
-    /**
-     * @param int $patchVersion
-     */
     public function setPatchVersion(int $patchVersion): void
     {
         $this->patchVersion = $patchVersion;
@@ -229,17 +179,11 @@ class Server
         $this->patchTime = $patchTime;
     }
 
-    /**
-     * @return int
-     */
     public function getProcessId(): int
     {
         return $this->processId;
     }
 
-    /**
-     * @param int $processId
-     */
     public function setProcessId(int $processId): void
     {
         $this->processId = $processId;
@@ -250,49 +194,31 @@ class Server
         return $this->posttime;
     }
 
-    /**
-     * @return DateTime
-     */
     public function getPosttime(): DateTime
     {
         return $this->posttime;
     }
 
-    /**
-     * @param DateTime $posttime
-     */
     public function setPosttime(DateTime $posttime): void
     {
         $this->posttime = $posttime;
     }
 
-    /**
-     * @return string
-     */
     public function getSettingState(): string
     {
         return $this->settingState;
     }
 
-    /**
-     * @param string $settingState
-     */
     public function setSettingState(string $settingState): void
     {
         $this->settingState = $settingState;
     }
 
-    /**
-     * @return string
-     */
     public function getPresentState(): string
     {
         return $this->presentState;
     }
 
-    /**
-     * @param string $presentState
-     */
     public function setPresentState(string $presentState): void
     {
         $this->presentState = $presentState;

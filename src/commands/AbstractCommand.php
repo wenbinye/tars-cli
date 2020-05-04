@@ -1,8 +1,8 @@
 <?php
 
+declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
-
 
 use Monolog\Handler\ErrorLogHandler;
 use Monolog\Logger;
@@ -12,13 +12,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use wenbinye\tars\cli\Config;
-use wenbinye\tars\cli\models\ServerName;
 use wenbinye\tars\cli\TarsClient;
 
 abstract class AbstractCommand extends Command
 {
-
-
     /**
      * @var InputInterface
      */
@@ -36,8 +33,8 @@ abstract class AbstractCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption("format", null, InputOption::VALUE_REQUIRED, "output format, ascii|json");
-        $this->addOption("debug", null, InputOption::VALUE_NONE, "show debug");
+        $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'output format, ascii|json');
+        $this->addOption('debug', null, InputOption::VALUE_NONE, 'show debug');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -45,15 +42,21 @@ abstract class AbstractCommand extends Command
         $this->input = $input;
         $this->output = $output;
         $this->handle();
+
         return 0;
     }
 
     protected function getTarsClient(): TarsClient
     {
         if (!$this->tarsClient) {
-            $logger = new Logger("tars", [new ErrorLogHandler()]);
-            $this->tarsClient = new TarsClient(Config::getInstance(), $logger, $this->input->getOption("debug"));
+            $logger = new Logger('tars', [new ErrorLogHandler()]);
+            $config = Config::getInstance();
+            if (!$config->getEndpoint()) {
+                throw new \InvalidArgumentException('API not config. Use config command set endpoint first.');
+            }
+            $this->tarsClient = new TarsClient($config, $logger, $this->input->getOption('debug'));
         }
+
         return $this->tarsClient;
     }
 
@@ -76,6 +79,7 @@ abstract class AbstractCommand extends Command
     {
         $table = new Table($this->output);
         $table->setHeaders($headers);
+
         return $table;
     }
 
