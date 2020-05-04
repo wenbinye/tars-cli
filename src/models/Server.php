@@ -228,4 +228,28 @@ class Server
     {
         return (string) $this->server;
     }
+
+    public static function fromArray(array $info): self
+    {
+        $server = new self();
+        $server->setId($info['id']);
+        $server->setServer(new ServerName($info['application'], $info['server_name']));
+        $server->setServerType($info['server_type']);
+        $server->setEnableSet($info['enable_set']);
+        $server->setNodeName($info['node_name']);
+        $server->setTemplateName($info['template_name'] ?? '');
+        $server->setAsyncThreadNum((int) ($info['async_thread_num'] ?? 0));
+        if (!empty($info['patch_version'])) {
+            $server->setPatchVersion((int) $info['patch_version']);
+            $server->setPatchTime(DateTime::parse($info['patch_time']));
+        } else {
+            $server->setPatchVersion(0);
+        }
+        $server->setPosttime(DateTime::parse($info['posttime']));
+        $server->setProcessId((int) ($info['process_id'] ?? 0));
+        $server->setSettingState($info['setting_state'] ?? '');
+        $server->setPresentState($info['present_state'] ?? '');
+
+        return $server;
+    }
 }

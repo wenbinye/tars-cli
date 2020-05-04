@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli;
 
-use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\MessageFormatter;
@@ -16,6 +15,7 @@ use Psr\Log\LoggerAwareTrait;
 use Psr\Log\LoggerInterface;
 use wenbinye\tars\cli\exception\BadResponseException;
 use wenbinye\tars\cli\exception\RequestException;
+use wenbinye\tars\cli\models\Adapter;
 use wenbinye\tars\cli\models\Server;
 use wenbinye\tars\cli\models\ServerName;
 
@@ -119,7 +119,7 @@ class TarsClient implements LoggerAwareInterface
         if (is_numeric($serverIdOrName)) {
             $this->get('server', ['id' => $serverIdOrName]);
 
-            return $this->createServer($this->getLastResult());
+            return Server::fromArray($this->getLastResult());
         }
 
         $serverName = $this->getServerName($serverIdOrName);
@@ -175,35 +175,28 @@ class TarsClient implements LoggerAwareInterface
      */
     public function getServers(string $app): array
     {
-        $servers = [];
-        foreach ($this->get('server_list', ['tree_node_id' => '1'.$app]) as $info) {
-            $servers[] = $this->createServer($info);
-        }
-
-        return $servers;
+        return array_map([Server::class, 'fromArray'], $this->get('server_list', ['tree_node_id' => '1'.$app]));
     }
 
-    protected function createServer(array $info): Server
+    /**
+     * @return Adapter[]
+     */
+    public function getAdapters(int $serverId): array
     {
-        $server = new Server();
-        $server->setId($info['id']);
-        $server->setServer(new ServerName($info['application'], $info['server_name']));
-        $server->setServerType($info['server_type']);
-        $server->setEnableSet($info['enable_set']);
-        $server->setNodeName($info['node_name']);
-        $server->setTemplateName($info['template_name'] ?? '');
-        $server->setAsyncThreadNum((int) ($info['async_thread_num'] ?? 0));
-        if (!empty($info['patch_version'])) {
-            $server->setPatchVersion((int) $info['patch_version']);
-            $server->setPatchTime(Carbon::parse($info['patch_time']));
-        } else {
-            $server->setPatchVersion(0);
-        }
-        $server->setPosttime(Carbon::parse($info['posttime']));
-        $server->setProcessId((int) ($info['process_id'] ?? 0));
-        $server->setSettingState($info['setting_state'] ?? '');
-        $server->setPresentState($info['present_state'] ?? '');
+        return array_map([Adapter::class, 'fromArray'], $this->get('adapter_conf_list', ['id' => $serverId]));
+    }
 
-        return $server;
+    public function getAvailablePort(string $node): ?int
+    {
+        return $this->get('auto_port', ['node_name' => $node])[0]['port'] ?? null;
+    }
+
+    public function getAdapter(int $adapterId): Adapter
+    {
+        $ret = $this->get('adapter_conf', ['id' => $adapterId]);
+        if (isset($ret['id'])) {
+            return Adapter::fromArray($ret);
+        }
+        throw new \InvalidArgumentException("Cannot find adapter $adapterId");
     }
 }

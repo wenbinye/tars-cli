@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputOption;
+use wenbinye\tars\cli\Task;
 
 class PatchCommand extends AbstractCommand
 {
@@ -51,52 +52,26 @@ class PatchCommand extends AbstractCommand
     {
         $server = $this->getTarsClient()->getServer($this->input->getArgument('server'));
         $patchVersion = $this->input->getOption('apply');
-        $taskNo = $this->getTarsClient()->postJson('add_task', [
-            'serial' => true,
-            'items' => [
-                [
-                    'server_id' => $server->getId(),
-                    'command' => 'patch_tars',
-                    'parameters' => [
-                        'patch_id' => $patchVersion,
-                        'bak_flag' => false,
-                        'update_text' => '',
-                    ],
-                ],
-            ],
-        ]);
-        if (empty($taskNo)) {
-            $this->output->writeln("<error>Fail to apply patch version $patchVersion</error>");
-        }
-        $retries = 15;
-        while ($retries-- > 0) {
-            $ret = $this->getTarsClient()->get('task', ['task_no' => $taskNo]);
-            $status = $ret['items'][0]['status_info'] ?? null;
-            if (!$status) {
-                throw new \InvalidArgumentException("Cannot get task status $taskNo");
-            }
-            if ('EM_I_SUCCESS' === $status) {
-                $this->output->writeln('<info>'.$ret['items'][0]['execute_info'].'</info>');
+        Task::builder()
+            ->setTarsClient($this->getTarsClient())
+            ->setServerId($server->getId())
+            ->setCommand('patch_tars')
+            ->setParameters([
+                'patch_id' => $patchVersion,
+                'bak_flag' => false,
+                'update_text' => '',
+            ])
+            ->setOnSuccess(function ($statusInfo) use ($patchVersion, $server) {
+                $this->output->writeln("<info>$statusInfo</info>");
                 $this->output->writeln("<info>Apply patch $patchVersion to $server successfully</info>");
-
-                return;
-            }
-
-            if ('EM_I_FAILED' === $status) {
-                $this->output->writeln('<error>'.$ret['items'][0]['execute_info'].'</error>');
+            })
+            ->setOnFail(function ($statusInfo) use ($patchVersion, $server) {
+                $this->output->writeln("<error>$statusInfo</error>");
                 $this->output->writeln("<error>Fail to apply patch $patchVersion to $server</error>");
-
-                return;
-            }
-
-            if ('EM_I_RUNNING' !== $status) {
-                $this->output->writeln("<error>Unknown status $status</error>");
-
-                return;
-            }
-            $this->output->writeln('<info>task is running</info>');
-            sleep(2);
-        }
-        $this->output->writeln("<error>Cannot get task status $taskNo</error>");
+            })
+            ->setOnRunning(function () {
+                $this->output->writeln('<info>task is running</info>');
+            })
+            ->build()->run();
     }
 }

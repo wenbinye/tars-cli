@@ -2,11 +2,14 @@
 <?php
 
 use Symfony\Component\Console\Application;
+use wenbinye\tars\cli\commands\AdapterCommand;
 use wenbinye\tars\cli\commands\ConfigCommand;
 use wenbinye\tars\cli\commands\PatchCommand;
 use wenbinye\tars\cli\commands\PatchUploadCommand;
 use wenbinye\tars\cli\commands\ServerCommand;
 use wenbinye\tars\cli\commands\ServerDeployCommand;
+use wenbinye\tars\cli\commands\ServerRestartCommand;
+use wenbinye\tars\cli\commands\ServerStopCommand;
 
 foreach ([__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php'] as $file) {
     if (file_exists($file)) {
@@ -19,6 +22,9 @@ $application = new Application("tars", "@version@");
 $application->add(new ConfigCommand());
 $application->add(new ServerCommand());
 $application->add(new ServerDeployCommand());
+$application->add(new ServerRestartCommand());
+$application->add(new ServerStopCommand());
 $application->add(new PatchCommand());
 $application->add(new PatchUploadCommand());
+$application->add(new AdapterCommand());
 $application->run();

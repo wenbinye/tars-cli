@@ -83,5 +83,15 @@ abstract class AbstractCommand extends Command
         return $table;
     }
 
+    protected function readJson()
+    {
+        $data = $this->input->getOption('json');
+        if ('-' === $data) {
+            $data = file_get_contents('php://stdin');
+        }
+
+        return json_decode($data, true);
+    }
+
     abstract protected function handle(): void;
 }
