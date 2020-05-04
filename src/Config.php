@@ -10,16 +10,16 @@ class Config
     private static $INSTANCE;
 
     /**
-     * @var string
+     * @var ?string
      */
     private $endpoint;
 
     /**
-     * @var string
+     * @var ?string
      */
     private $token;
 
-    public function getEndpoint(): string
+    public function getEndpoint(): ?string
     {
         return $this->endpoint;
     }
@@ -29,7 +29,7 @@ class Config
         $this->endpoint = $endpoint;
     }
 
-    public function getToken(): string
+    public function getToken(): ?string
     {
         return $this->token;
     }
@@ -42,30 +42,39 @@ class Config
     public static function getInstance(): self
     {
         if (!self::$INSTANCE) {
-            $config = new self();
             $file = self::getHomeDir().self::TARS_CONFIG_JSON;
-            if (file_exists($file)) {
-                $data = json_decode(file_get_contents($file), true);
-                if (!empty($data) && is_array($data)) {
-                    foreach ($data as $key => $value) {
-                        $config->{$key} = $value;
-                    }
-                }
-            }
-            self::$INSTANCE = $config;
+            self::$INSTANCE = is_readable($file) ? self::read($file) : new self();
         }
 
         return self::$INSTANCE;
     }
 
-    public static function save(Config $config): void
+    public static function read(string $file): self
     {
-        $configFile = self::getHomeDir().self::TARS_CONFIG_JSON;
-        $dir = dirname($configFile);
+        $config = new self();
+        if (!is_readable($file)) {
+            throw new \InvalidArgumentException("Cannot load config from $file");
+        }
+        $data = json_decode(file_get_contents($file), true);
+        if (!empty($data) && is_array($data)) {
+            foreach ($data as $key => $value) {
+                $config->{$key} = $value;
+            }
+        }
+
+        return $config;
+    }
+
+    public static function save(Config $config, ?string $file = null): void
+    {
+        if (!isset($file)) {
+            $file = self::getHomeDir().self::TARS_CONFIG_JSON;
+        }
+        $dir = dirname($file);
         if (!is_dir($dir) && !mkdir($dir) && !is_dir($dir)) {
             throw new \RuntimeException("Cannot create config directory $dir");
         }
-        file_put_contents($configFile, json_encode(get_object_vars($config),
+        file_put_contents($file, json_encode(get_object_vars($config),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 

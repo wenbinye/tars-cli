@@ -34,6 +34,7 @@ abstract class AbstractCommand extends Command
     protected function configure(): void
     {
         $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'output format, ascii|json');
+        $this->addOption('config', null, InputOption::VALUE_REQUIRED, 'config file path');
         $this->addOption('debug', null, InputOption::VALUE_NONE, 'show debug');
     }
 
@@ -50,7 +51,8 @@ abstract class AbstractCommand extends Command
     {
         if (!$this->tarsClient) {
             $logger = new Logger('tars', [new ErrorLogHandler()]);
-            $config = Config::getInstance();
+            $config = $this->input->getOption('config') ? Config::read($this->input->getOption('config'))
+                : Config::getInstance();
             if (!$config->getEndpoint()) {
                 throw new \InvalidArgumentException('API not config. Use config command set endpoint first.');
             }
