@@ -4,6 +4,9 @@
 use Symfony\Component\Console\Application;
 use wenbinye\tars\cli\commands\AdapterCommand;
 use wenbinye\tars\cli\commands\ConfigCommand;
+use wenbinye\tars\cli\commands\ConfigDeleteCommand;
+use wenbinye\tars\cli\commands\ConfigSaveCommand;
+use wenbinye\tars\cli\commands\ConfigureCommand;
 use wenbinye\tars\cli\commands\PatchCommand;
 use wenbinye\tars\cli\commands\PatchUploadCommand;
 use wenbinye\tars\cli\commands\ServerCommand;
@@ -19,7 +22,7 @@ foreach ([__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', 
 }
 
 $application = new Application("tars", "@version@");
-$application->add(new ConfigCommand());
+$application->add(new ConfigureCommand());
 $application->add(new ServerCommand());
 $application->add(new ServerDeployCommand());
 $application->add(new ServerRestartCommand());
@@ -27,4 +30,7 @@ $application->add(new ServerStopCommand());
 $application->add(new PatchCommand());
 $application->add(new PatchUploadCommand());
 $application->add(new AdapterCommand());
+$application->add(new ConfigCommand());
+$application->add(new ConfigSaveCommand());
+$application->add(new ConfigDeleteCommand());
 $application->run();
