@@ -11,8 +11,11 @@ use wenbinye\tars\cli\commands\PatchCommand;
 use wenbinye\tars\cli\commands\PatchUploadCommand;
 use wenbinye\tars\cli\commands\ServerCommand;
 use wenbinye\tars\cli\commands\ServerDeployCommand;
+use wenbinye\tars\cli\commands\ServerDestroyCommand;
 use wenbinye\tars\cli\commands\ServerRestartCommand;
 use wenbinye\tars\cli\commands\ServerStopCommand;
+use wenbinye\tars\cli\commands\TemplateCommand;
+use wenbinye\tars\cli\commands\TemplateSaveCommand;
 
 foreach ([__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.php', __DIR__ . '/vendor/autoload.php'] as $file) {
     if (file_exists($file)) {
@@ -27,10 +30,13 @@ $application->add(new ServerCommand());
 $application->add(new ServerDeployCommand());
 $application->add(new ServerRestartCommand());
 $application->add(new ServerStopCommand());
+$application->add(new ServerDestroyCommand());
 $application->add(new PatchCommand());
 $application->add(new PatchUploadCommand());
 $application->add(new AdapterCommand());
 $application->add(new ConfigCommand());
 $application->add(new ConfigSaveCommand());
 $application->add(new ConfigDeleteCommand());
+$application->add(new TemplateCommand());
+$application->add(new TemplateSaveCommand());
 $application->run();

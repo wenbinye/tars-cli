@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use wenbinye\tars\cli\Task;
 
@@ -14,7 +15,7 @@ class PatchCommand extends AbstractCommand
         parent::configure();
         $this->setName('patch');
         $this->setDescription('Lists server patches and applies the server patch');
-        $this->addArgument('server', InputOption::VALUE_REQUIRED, 'The server name or id');
+        $this->addArgument('server', InputArgument::REQUIRED, 'The server name or id');
         $this->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page', 0);
         $this->addOption('page-size', null, InputOption::VALUE_REQUIRED, 'Page size', 50);
         $this->addOption('apply', null, InputOption::VALUE_REQUIRED, 'Apply patch version');
@@ -31,7 +32,8 @@ class PatchCommand extends AbstractCommand
 
     private function listPatches(): void
     {
-        $server = $this->getTarsClient()->getServerName($this->input->getArgument('server'));
+        $serverId = $this->input->getArgument('server');
+        $server = $this->getTarsClient()->getServerName($serverId);
         $ret = $this->getTarsClient()->get('server_patch_list', [
             'application' => $server->getApplication(),
             'module_name' => $server->getServerName(),
@@ -52,6 +54,7 @@ class PatchCommand extends AbstractCommand
     {
         $server = $this->getTarsClient()->getServer($this->input->getArgument('server'));
         $patchVersion = $this->input->getOption('apply');
+
         Task::builder()
             ->setTarsClient($this->getTarsClient())
             ->setServerId($server->getId())

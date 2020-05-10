@@ -27,25 +27,27 @@ class ConfigureCommand extends Command
         /** @var QuestionHelper $helper */
         $helper = $this->getHelper('question');
         $config->setEndpoint($helper->ask($input, $output, $this->createQuestion('Web API URL', 'http://localhost:3000')));
-        $config->setToken($helper->ask($input, $output, $this->createQuestion('API Token')));
+        $config->setToken($helper->ask($input, $output, $this->createQuestion('API Token', null, false)));
         Config::save($config, $input->getOption('config'));
 
         return 0;
     }
 
-    protected function createQuestion(string $prompt, $default = null): Question
+    protected function createQuestion(string $prompt, $default = null, bool $required = true): Question
     {
         if (!empty($default)) {
             $prompt .= " (default $default)";
         }
         $question = new Question($prompt.': ', $default);
-        $question->setValidator(static function ($value) {
-            if (empty($value)) {
-                throw new \InvalidArgumentException('Should not be empty');
-            }
+        if ($required) {
+            $question->setValidator(static function ($value) use ($prompt) {
+                if (empty($value)) {
+                    throw new \InvalidArgumentException($prompt.' should not be empty');
+                }
 
-            return $value;
-        });
+                return $value;
+            });
+        }
 
         return $question;
     }

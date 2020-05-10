@@ -199,4 +199,16 @@ class TarsClient implements LoggerAwareInterface
         }
         throw new \InvalidArgumentException("Cannot find adapter $adapterId");
     }
+
+    public function getTemplate($templateIdOrName): ?array
+    {
+        $templates = $this->get('query_profile_template');
+        foreach ($templates as $template) {
+            if ($template['id'] == $templateIdOrName || $template['template_name'] === $templateIdOrName) {
+                return $template;
+            }
+        }
+
+        return null;
+    }
 }

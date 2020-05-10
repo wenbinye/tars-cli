@@ -90,6 +90,12 @@ abstract class AbstractCommand extends Command
         $data = $this->input->getOption('json');
         if ('-' === $data) {
             $data = file_get_contents('php://stdin');
+        } elseif (!in_array($data[0], ['{', '['], true)) {
+            $json = file_get_contents($data);
+            if (!$json) {
+                throw new \InvalidArgumentException("Cannot read file $data");
+            }
+            $data = $json;
         }
 
         return json_decode($data, true);
