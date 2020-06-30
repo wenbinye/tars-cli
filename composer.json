@@ -1,19 +1,21 @@
 {
-  "name": "wenbinye/tars-cli",
-  "autoload": {
-    "psr-4": {
-      "wenbinye\\tars\\cli\\": "src/"
-    }
-  },
-  "require": {
-    "php": "^7.2",
-    "ext-json": "*",
-    "symfony/console": "^5.0",
-    "monolog/monolog": "^1.0",
-    "nesbot/carbon": "^2.0",
-    "guzzlehttp/guzzle": "^6.0"
-  },
-  "require-dev": {
-    "winwin/composer-phpcs-plugin": "^0.1"
-  }
+    "name": "wenbinye/tars-cli",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "wenbinye\\tars\\cli\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.2",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^6.0",
+        "monolog/monolog": "^1.0",
+        "nesbot/carbon": "^2.0",
+        "symfony/console": "^5.0"
+    },
+    "require-dev": {
+        "winwin/composer-phpcs-plugin": "^0.1"
+    },
+    "bin": ["./tars"]
 }
