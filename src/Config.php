@@ -6,7 +6,8 @@ namespace wenbinye\tars\cli;
 
 class Config
 {
-    private const TARS_CONFIG_JSON = '/.tars/config.json';
+    private const TARS_CONFIG_JSON = '.config/tars/config.json';
+
     private static $INSTANCE;
 
     /**
@@ -42,7 +43,7 @@ class Config
     public static function getInstance(): self
     {
         if (!self::$INSTANCE) {
-            $file = self::getHomeDir().self::TARS_CONFIG_JSON;
+            $file = self::getConfigFile();
             self::$INSTANCE = is_readable($file) ? self::read($file) : new self();
         }
 
@@ -68,17 +69,22 @@ class Config
     public static function save(Config $config, ?string $file = null): void
     {
         if (!isset($file)) {
-            $file = self::getHomeDir().self::TARS_CONFIG_JSON;
+            $file = self::getConfigFile();
         }
         $dir = dirname($file);
-        if (!is_dir($dir) && !mkdir($dir) && !is_dir($dir)) {
+        if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) {
             throw new \RuntimeException("Cannot create config directory $dir");
         }
         file_put_contents($file, json_encode(get_object_vars($config),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
-    private static function getHomeDir()
+    public static function getConfigFile(): string
+    {
+        return self::getHomeDir().'/'.self::TARS_CONFIG_JSON;
+    }
+
+    public static function getHomeDir()
     {
         $home = getenv('HOME');
         if (!empty($home)) {

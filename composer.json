@@ -9,13 +9,13 @@
     "require": {
         "php": "^7.2",
         "ext-json": "*",
-        "guzzlehttp/guzzle": "^6.0",
-        "monolog/monolog": "^1.0",
+        "guzzlehttp/guzzle": "^7.0",
+        "monolog/monolog": "^2.0",
         "nesbot/carbon": "^2.0",
         "symfony/console": "^5.0"
     },
     "require-dev": {
-        "winwin/composer-phpcs-plugin": "^0.1"
+        "winwin/composer-phpcs-plugin": "^0.2"
     },
     "bin": ["./tars"]
 }
