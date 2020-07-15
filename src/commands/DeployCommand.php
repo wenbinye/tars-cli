@@ -22,7 +22,14 @@ class DeployCommand extends AbstractCommand
         if ($this->input->getOption('template')) {
             echo json_encode($this->createDeployTemplate(), JSON_PRETTY_PRINT), "\n";
         } elseif ($this->input->getOption('json')) {
-            $ret = $this->postJson('deploy_server', $this->readJson());
+            $data = $this->readJson();
+            if (!isset($data['template_name'])) {
+                throw new \InvalidArgumentException('template_name is missing');
+            }
+            if (!$this->getTarsClient()->getTemplate($data['template_name'])) {
+                throw new \InvalidArgumentException("template_name {$data['template_name']} does not exist");
+            }
+            $ret = $this->postJson('deploy_server', $data);
             if (isset($ret['server_conf']['id'])) {
                 $this->output->writeln('<info>Server deployed successfully!</info>');
             } else {
@@ -37,13 +44,13 @@ class DeployCommand extends AbstractCommand
     {
         $node = '';
         foreach ($this->get('list_tars_node')['rows'] as $nodeInfo) {
-            if ($nodeInfo['present_state'] === 'active') {
+            if ('active' === $nodeInfo['present_state']) {
                 $node = $nodeInfo['node_name'];
                 break;
             }
         }
         if (!$node) {
-            throw new \InvalidArgumentException("Cannot get node");
+            throw new \InvalidArgumentException('Cannot get node');
         }
         $port = $this->getTarsClient()->getAvailablePort($node);
 
