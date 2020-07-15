@@ -12,7 +12,7 @@ class TemplateSaveCommand extends AbstractCommand
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('template:save');
+        $this->setName('template');
         $this->setDescription('Add or update template');
         $this->addOption('id', null, InputOption::VALUE_REQUIRED, 'The template id');
         $this->addOption('name', null, InputOption::VALUE_REQUIRED, 'The template name');

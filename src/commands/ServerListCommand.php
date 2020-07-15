@@ -7,12 +7,12 @@ namespace wenbinye\tars\cli\commands;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
-class ServerCommand extends AbstractCommand
+class ServerListCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('server');
+        $this->setName('server:list');
         $this->setDescription('Lists server by app or id');
         $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Display all application include tars');
         $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'Display server of the app');

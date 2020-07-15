@@ -7,12 +7,12 @@ namespace wenbinye\tars\cli\commands;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 
-class TemplateCommand extends AbstractCommand
+class TemplateListCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('template');
+        $this->setName('template:list');
         $this->setDescription('Query profile template');
         $this->addOption('parent', null, InputOption::VALUE_REQUIRED, 'Parent template name');
         $this->addOption('out', null, InputOption::VALUE_REQUIRED, 'Output file name');

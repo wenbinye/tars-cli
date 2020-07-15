@@ -8,12 +8,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use wenbinye\tars\cli\ConfigLevel;
 
-class ConfigCommand extends AbstractCommand
+class ConfigListCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('config');
+        $this->setName('config:list');
         $this->setDescription('Lists config');
         $this->addOption('level', null, InputOption::VALUE_REQUIRED, '配置级别，可选值app|set|area|group|server', 'server');
         $this->addOption('id', null, InputOption::VALUE_REQUIRED, '查看配置');
