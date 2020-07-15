@@ -11,16 +11,34 @@ class Config
     private static $INSTANCE;
 
     /**
-     * @var ?string
+     * @var string
      */
     private $endpoint;
 
     /**
-     * @var ?string
+     * @var string
      */
     private $token;
 
-    public function getEndpoint(): ?string
+    /**
+     * @var string
+     */
+    private $template;
+
+    /**
+     * Config constructor.
+     *
+     * @param $endpoint
+     * @param $token
+     */
+    public function __construct(string $endpoint = '', string $token = '', string $template = '')
+    {
+        $this->endpoint = $endpoint;
+        $this->token = $token;
+        $this->template = $template;
+    }
+
+    public function getEndpoint(): string
     {
         return $this->endpoint;
     }
@@ -30,14 +48,24 @@ class Config
         $this->endpoint = $endpoint;
     }
 
-    public function getToken(): ?string
+    public function getToken(): string
     {
         return $this->token;
     }
 
-    public function setToken(?string $token): void
+    public function setToken(string $token): void
     {
         $this->token = $token;
+    }
+
+    public function getTemplate(): string
+    {
+        return $this->template;
+    }
+
+    public function setTemplate(string $template): void
+    {
+        $this->template = $template;
     }
 
     public static function getInstance(): self

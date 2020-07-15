@@ -41,6 +41,11 @@ class TarsClient implements LoggerAwareInterface
      */
     private $config;
 
+    /**
+     * @var array
+     */
+    private $templates;
+
     public function __construct(Config $config, LoggerInterface $logger, bool $debug = false)
     {
         $this->config = $config;
@@ -81,6 +86,11 @@ class TarsClient implements LoggerAwareInterface
         }
 
         return $this->httpClient;
+    }
+
+    public function getConfig(): Config
+    {
+        return $this->config;
     }
 
     public function get($uri, array $query = [])
@@ -200,9 +210,26 @@ class TarsClient implements LoggerAwareInterface
         throw new \InvalidArgumentException("Cannot find adapter $adapterId");
     }
 
+    public function getTemplates(): array
+    {
+        if (!$this->templates) {
+            $this->templates = $this->get('query_profile_template');
+        }
+
+        return $this->templates;
+    }
+
+    public function saveTemplate(array $template): array
+    {
+        $result = $this->postJson('add_profile_template', $template);
+        $this->templates = null;
+
+        return $result;
+    }
+
     public function getTemplate($templateIdOrName): ?array
     {
-        $templates = $this->get('query_profile_template');
+        $templates = $this->getTemplates();
         foreach ($templates as $template) {
             if ($template['id'] == $templateIdOrName || $template['template_name'] === $templateIdOrName) {
                 return $template;

@@ -9,12 +9,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use wenbinye\tars\cli\Task;
 
-class ServerDestroyCommand extends AbstractCommand
+class DestroyCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('server:destroy');
+        $this->setName('destroy');
         $this->setDescription('Destroy server deployment');
         $this->addArgument('server', InputArgument::REQUIRED, 'The server id or name');
     }
@@ -24,7 +24,7 @@ class ServerDestroyCommand extends AbstractCommand
         $server = $this->getTarsClient()->getServer($this->input->getArgument('server'));
         /** @var QuestionHelper $helper */
         $helper = $this->getHelper('question');
-        $question = new ConfirmationQuestion('Destroy server '.$server->getServer().' [y]:', true);
+        $question = new ConfirmationQuestion('Destroy server '.$server->getServer().' [y/N]:', false);
         if (!$helper->ask($this->input, $this->output, $question)) {
             return;
         }

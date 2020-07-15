@@ -26,8 +26,12 @@ class ConfigureCommand extends Command
         $config = Config::getInstance();
         /** @var QuestionHelper $helper */
         $helper = $this->getHelper('question');
-        $config->setEndpoint($helper->ask($input, $output, $this->createQuestion('Web API URL', 'http://localhost:3000')));
-        $config->setToken($helper->ask($input, $output, $this->createQuestion('API Token', null, false)));
+        $config->setEndpoint($helper->ask($input, $output,
+            $this->createQuestion('Web API URL', $config->getEndpoint() ?: 'http://localhost:3000')));
+        $config->setToken($helper->ask($input, $output,
+            $this->createQuestion('API Token', $config->getToken() ?: '', false)));
+        $config->setTemplate($helper->ask($input, $output,
+            $this->createQuestion('Default template', $config->getTemplate() ?: 'tars.tarsphp.default')));
         Config::save($config, $input->getOption('config'));
 
         return 0;

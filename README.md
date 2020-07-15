@@ -1,9 +1,10 @@
 # Command Line Utilities for TARS
 
-| Command       | Description                                       |
-|---------------|---------------------------------------------------|
-| config        | Configures API parameters                         |
-| server        | Lists server by app or id                         |
-| server:deploy | Deploy server                                     |
-| patch         | Lists server patches and applies the server patch |
-| patch:upload  | Uploads patch file                                |
+| Command    | Description                                       |
+|------------|---------------------------------------------------|
+| configure  | Configures API parameters                         |
+| server     | Lists server by app or id                         |
+| deploy     | Deploy server                                     |
+| patch      | Uploads patch file                                |
+| patch:list | Lists server patches and applies the server patch |
+

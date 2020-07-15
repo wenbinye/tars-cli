@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
 
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use wenbinye\tars\cli\Task;
 
 class PatchCommand extends AbstractCommand
 {
@@ -14,67 +14,59 @@ class PatchCommand extends AbstractCommand
     {
         parent::configure();
         $this->setName('patch');
-        $this->setDescription('Lists server patches and applies the server patch');
-        $this->addArgument('server', InputArgument::REQUIRED, 'The server name or id');
-        $this->addOption('page', null, InputOption::VALUE_REQUIRED, 'Page', 0);
-        $this->addOption('page-size', null, InputOption::VALUE_REQUIRED, 'Page size', 50);
-        $this->addOption('apply', null, InputOption::VALUE_REQUIRED, 'Apply patch version');
+        $this->setDescription('Uploads patch file');
+        $this->addOption('comment', null, InputOption::VALUE_REQUIRED, 'Patch comment');
+        $this->addOption('apply', null, InputOption::VALUE_NONE, 'Apply patch after upload');
+        $this->addArgument('server', InputArgument::REQUIRED, 'The server app name or server full name or server id');
+        $this->addArgument('file', InputArgument::REQUIRED, 'Patch file');
     }
 
     protected function handle(): void
     {
-        if ($this->input->getOption('apply')) {
-            $this->applyPatch();
-        } else {
-            $this->listPatches();
+        $patchFile = $this->input->getArgument('file');
+        $server = $this->input->getArgument('server');
+        if ($this->lookLikeApp($server)) {
+            $server .= '.'.explode('_', basename($patchFile), 2)[0];
         }
-    }
-
-    private function listPatches(): void
-    {
-        $serverId = $this->input->getArgument('server');
-        $server = $this->getTarsClient()->getServerName($serverId);
-        $ret = $this->getTarsClient()->get('server_patch_list', [
-            'application' => $server->getApplication(),
-            'module_name' => $server->getServerName(),
-            'curr_page' => $this->input->getOption('page'),
-            'page_size' => $this->input->getOption('page-size'),
+        $serverName = $this->getTarsClient()->getServerName($server);
+        $ret = $this->getTarsClient()->post('upload_patch_package', [
+            'multipart' => $this->buildMultipart([
+                'application' => $serverName->getApplication(),
+                'module_name' => $serverName->getServerName(),
+                'task_id' => time(),
+                'comment' => $this->input->getOption('comment') ?? '',
+                'md5' => md5_file($patchFile),
+                'suse' => fopen($patchFile, 'rb'),
+            ]),
         ]);
-        if (!empty($ret['rows'])) {
-            $table = $this->createTable(['Version', 'Server', 'Created At']);
-            foreach ($ret['rows'] as $row) {
-                $table->addRow([$row['id'], $row['server'], $row['posttime']]);
+        if (isset($ret['id'])) {
+            $this->output->writeln("<info>Upload patch to $serverName version {$ret['id']} successfully</info>");
+            if ($this->input->getOption('apply')) {
+                $command = $this->getApplication()->get('patch');
+                $args = [
+                    'command' => $command->getName(),
+                    '--apply' => $ret['id'],
+                    'server' => (string) $serverName,
+                ];
+                $command->run(new ArrayInput($args), $this->output);
             }
-            $table->render();
+        } else {
+            $this->output->writeln("<error>Upload patch to $serverName fail</error>");
         }
-        $this->output->writeln("<info>Total {$ret['count']} patches.</info>");
     }
 
-    private function applyPatch(): void
+    protected function buildMultipart(array $multipart): array
     {
-        $server = $this->getTarsClient()->getServer($this->input->getArgument('server'));
-        $patchVersion = $this->input->getOption('apply');
+        $data = [];
+        foreach ($multipart as $key => $value) {
+            $data[] = ['name' => $key, 'contents' => $value];
+        }
 
-        Task::builder()
-            ->setTarsClient($this->getTarsClient())
-            ->setServerId($server->getId())
-            ->setCommand('patch_tars')
-            ->setParameters([
-                'patch_id' => $patchVersion,
-                'bak_flag' => false,
-                'update_text' => '',
-            ])
-            ->setOnSuccess(function ($statusInfo) use ($patchVersion, $server) {
-                $this->output->writeln("<info>$statusInfo</info>");
-                $this->output->writeln("<info>Apply patch $patchVersion to $server successfully</info>");
-            })
-            ->setOnFail(function ($statusInfo) use ($patchVersion, $server) {
-                $this->output->writeln("<error>$statusInfo</error>");
-                $this->output->writeln("<error>Fail to apply patch $patchVersion to $server</error>");
-            })
-            ->setOnRunning(function () {
-                $this->output->writeln('<info>task is running</info>');
-            })
-            ->build()->run();
+        return $data;
+    }
+
+    private function lookLikeApp(string $server): bool
+    {
+        return !is_numeric($server) && false === strpos($server, '.');
     }
 }

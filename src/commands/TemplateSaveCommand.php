@@ -46,9 +46,13 @@ class TemplateSaveCommand extends AbstractCommand
             }
         }
 
-        $result = $this->getTarsClient()->postJson('add_profile_template', [
+        $parent = $this->input->getOption('parent');
+        if ($parent && !$this->getTarsClient()->getTemplate($parent)) {
+            throw new \InvalidArgumentException("父模版 $parent 不存在");
+        }
+        $result = $this->getTarsClient()->saveTemplate([
             'template_name' => $name,
-            'parents_name' => $this->input->getOption('parent'),
+            'parents_name' => $parent,
             'profile' => $profile,
         ]);
         if ($result) {

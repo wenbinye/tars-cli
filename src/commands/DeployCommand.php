@@ -6,12 +6,12 @@ namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputOption;
 
-class ServerDeployCommand extends AbstractCommand
+class DeployCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('server:deploy');
+        $this->setName('deploy');
         $this->setDescription('Deploy server');
         $this->addOption('json', null, InputOption::VALUE_REQUIRED, 'server definition in json file');
         $this->addOption('template', null, InputOption::VALUE_NONE, 'output deploy template');
@@ -35,14 +35,23 @@ class ServerDeployCommand extends AbstractCommand
 
     protected function createDeployTemplate(): array
     {
-        $node = $this->get('node_list')[0] ?? null;
+        $node = '';
+        foreach ($this->get('list_tars_node')['rows'] as $nodeInfo) {
+            if ($nodeInfo['present_state'] === 'active') {
+                $node = $nodeInfo['node_name'];
+                break;
+            }
+        }
+        if (!$node) {
+            throw new \InvalidArgumentException("Cannot get node");
+        }
         $port = $this->getTarsClient()->getAvailablePort($node);
 
         return [
             'application' => 'appName',
             'server_name' => 'serverName',
             'server_type' => 'tars_php',
-            'template_name' => 'tars.tarsphp.default',
+            'template_name' => $this->getTarsClient()->getConfig()->getTemplate(),
             'node_name' => $node,
             'enable_set' => false,
             'set_name' => '',
@@ -57,7 +66,7 @@ class ServerDeployCommand extends AbstractCommand
                     'port' => $port,
                     'port_type' => 'tcp',
                     'protocol' => 'not_tars',
-                    'thread_num' => 5,
+                    'thread_num' => 0,
                     'max_connections' => 100000,
                     'queuecap' => 50000,
                     'queuetimeout' => 20000,
