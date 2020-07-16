@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
 
-use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use wenbinye\tars\cli\Task;
 
 class PatchCommand extends AbstractCommand
 {
@@ -16,14 +16,28 @@ class PatchCommand extends AbstractCommand
         $this->setName('patch');
         $this->setDescription('Uploads patch file');
         $this->addOption('comment', null, InputOption::VALUE_REQUIRED, 'Patch comment');
-        $this->addOption('apply', null, InputOption::VALUE_NONE, 'Apply patch after upload');
+        $this->addOption('apply', null, InputOption::VALUE_REQUIRED, 'Apply patch id');
+        $this->addOption('no-apply', null, InputOption::VALUE_REQUIRED, 'Do not apply the uploaded patch');
         $this->addArgument('server', InputArgument::REQUIRED, 'The server app name or server full name or server id');
-        $this->addArgument('file', InputArgument::REQUIRED, 'Patch file');
+        $this->addArgument('file', InputArgument::OPTIONAL, 'Patch file');
     }
 
     protected function handle(): void
     {
+        if ($this->input->getOption('apply')) {
+            $this->applyPatch($this->input->getOption('apply'),
+                $this->input->getArgument('server'));
+        } else {
+            $this->uploadPatch();
+        }
+    }
+
+    private function uploadPatch(): void
+    {
         $patchFile = $this->input->getArgument('file');
+        if (!$patchFile) {
+            throw new \InvalidArgumentException('file 参数不能为空');
+        }
         $server = $this->input->getArgument('server');
         if ($this->lookLikeApp($server)) {
             $server .= '.'.explode('_', basename($patchFile), 2)[0];
@@ -41,18 +55,40 @@ class PatchCommand extends AbstractCommand
         ]);
         if (isset($ret['id'])) {
             $this->output->writeln("<info>Upload patch to $serverName version {$ret['id']} successfully</info>");
-            if ($this->input->getOption('apply')) {
-                $command = $this->getApplication()->get('patch');
-                $args = [
-                    'command' => $command->getName(),
-                    '--apply' => $ret['id'],
-                    'server' => (string) $serverName,
-                ];
-                $command->run(new ArrayInput($args), $this->output);
+            if ($this->input->getOption('no-apply')) {
+                return;
             }
+            $this->applyPatch($ret['id'], $serverName);
         } else {
             $this->output->writeln("<error>Upload patch to $serverName fail</error>");
         }
+    }
+
+    private function applyPatch($patchId, $serverName): void
+    {
+        $server = $this->getTarsClient()->getServer($serverName);
+
+        Task::builder()
+            ->setTarsClient($this->getTarsClient())
+            ->setServerId($server->getId())
+            ->setCommand('patch_tars')
+            ->setParameters([
+                'patch_id' => $patchId,
+                'bak_flag' => false,
+                'update_text' => '',
+            ])
+            ->setOnSuccess(function ($statusInfo) use ($patchId, $server) {
+                $this->output->writeln("<info>$statusInfo</info>");
+                $this->output->writeln("<info>Apply patch $patchId to $server successfully</info>");
+            })
+            ->setOnFail(function ($statusInfo) use ($patchId, $server) {
+                $this->output->writeln("<error>$statusInfo</error>");
+                $this->output->writeln("<error>Fail to apply patch $patchId to $server</error>");
+            })
+            ->setOnRunning(function () {
+                $this->output->writeln('<info>task is running</info>');
+            })
+            ->build()->run();
     }
 
     protected function buildMultipart(array $multipart): array

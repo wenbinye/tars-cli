@@ -58,7 +58,7 @@ class DeployCommand extends AbstractCommand
             'application' => 'appName',
             'server_name' => 'serverName',
             'server_type' => 'tars_php',
-            'template_name' => $this->getTarsClient()->getConfig()->getTemplate(),
+            'template_name' => $this->getTarsClient()->getConfig()->getTemplate() ?: 'tars.tarsphp.default',
             'node_name' => $node,
             'enable_set' => false,
             'set_name' => '',
