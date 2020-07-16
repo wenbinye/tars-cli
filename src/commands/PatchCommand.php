@@ -14,12 +14,12 @@ class PatchCommand extends AbstractCommand
     {
         parent::configure();
         $this->setName('patch');
-        $this->setDescription('Uploads patch file');
+        $this->setDescription('Uploads patch file or apply the patch');
         $this->addOption('comment', null, InputOption::VALUE_REQUIRED, 'Patch comment');
         $this->addOption('apply', null, InputOption::VALUE_REQUIRED, 'Apply patch id');
-        $this->addOption('no-apply', null, InputOption::VALUE_REQUIRED, 'Do not apply the uploaded patch');
+        $this->addOption('no-apply', null, InputOption::VALUE_OPTIONAL, 'Do not apply the uploaded patch');
         $this->addArgument('server', InputArgument::REQUIRED, 'The server app name or server full name or server id');
-        $this->addArgument('file', InputArgument::OPTIONAL, 'Patch file');
+        $this->addArgument('file', InputArgument::OPTIONAL, 'Patch file, required if upload patch');
     }
 
     protected function handle(): void
