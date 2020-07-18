@@ -25,11 +25,11 @@ class StopCommand extends AbstractCommand
             ->setServerId($server->getId())
             ->setCommand('stop')
             ->setOnSuccess(function ($statusInfo) use ($server) {
-                $this->output->writeln("<info>$statusInfo</info>");
+                $this->output->writeln("> <info>$statusInfo</info>");
                 $this->output->writeln("<info>Server $server was stopped!</info>");
             })
             ->setOnFail(function ($statusInfo) use ($server) {
-                $this->output->writeln("<error>$statusInfo</error>");
+                $this->output->writeln("> <error>$statusInfo</error>");
                 $this->output->writeln("<error>Fail to stop $server</error>");
             })
             ->setOnRunning(function () {

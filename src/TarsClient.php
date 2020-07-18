@@ -132,7 +132,11 @@ class TarsClient implements LoggerAwareInterface
             return Server::fromArray($this->getLastResult());
         }
 
-        $serverName = $this->getServerName($serverIdOrName);
+        if ($serverIdOrName instanceof ServerName) {
+            $serverName = $serverIdOrName;
+        } else {
+            $serverName = $this->getServerName($serverIdOrName);
+        }
         foreach ($this->getServers($serverName->getApplication()) as $server) {
             if ($server->getServerName() === $serverName->getServerName()) {
                 return $server;

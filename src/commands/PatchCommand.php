@@ -78,11 +78,11 @@ class PatchCommand extends AbstractCommand
                 'update_text' => '',
             ])
             ->setOnSuccess(function ($statusInfo) use ($patchId, $server) {
-                $this->output->writeln("<info>$statusInfo</info>");
+                $this->output->writeln("> <info> $statusInfo</info>");
                 $this->output->writeln("<info>Apply patch $patchId to $server successfully</info>");
             })
             ->setOnFail(function ($statusInfo) use ($patchId, $server) {
-                $this->output->writeln("<error>$statusInfo</error>");
+                $this->output->writeln("> <error> $statusInfo</error>");
                 $this->output->writeln("<error>Fail to apply patch $patchId to $server</error>");
             })
             ->setOnRunning(function () {
