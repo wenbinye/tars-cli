@@ -40,7 +40,7 @@ class PatchCommand extends AbstractCommand
         }
         $server = $this->input->getArgument('server');
         if ($this->lookLikeApp($server)) {
-            $server .= '.'.explode('_', basename($patchFile), 2)[0];
+            $server .= '.'.$this->extractServerName($patchFile);
         }
         $serverName = $this->getTarsClient()->getServerName($server);
         $ret = $this->getTarsClient()->post('upload_patch_package', [
@@ -104,5 +104,13 @@ class PatchCommand extends AbstractCommand
     private function lookLikeApp(string $server): bool
     {
         return !is_numeric($server) && false === strpos($server, '.');
+    }
+
+    private function extractServerName(string $file): string
+    {
+        if (preg_match('#^(.*)_\d+\.#', basename($file), $matches)) {
+            return $matches[1];
+        }
+        throw new \InvalidArgumentException("Cannot extract server name from '$file', not match regexp .*_\d+\.");
     }
 }
