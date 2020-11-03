@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputOption;
+use wenbinye\tars\cli\Config;
 
 class DeployCommand extends AbstractCommand
 {
@@ -42,11 +43,13 @@ class DeployCommand extends AbstractCommand
 
     protected function createDeployTemplate(): array
     {
-        $node = '';
-        foreach ($this->get('list_tars_node')['rows'] as $nodeInfo) {
-            if ('active' === $nodeInfo['present_state']) {
-                $node = $nodeInfo['node_name'];
-                break;
+        $node = Config::getInstance()->getNode();
+        if (!$node) {
+            foreach ($this->get('list_tars_node')['rows'] as $nodeInfo) {
+                if ('active' === $nodeInfo['present_state']) {
+                    $node = $nodeInfo['node_name'];
+                    break;
+                }
             }
         }
         if (!$node) {

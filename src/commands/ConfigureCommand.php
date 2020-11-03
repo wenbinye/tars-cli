@@ -4,25 +4,26 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
 
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\QuestionHelper;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ChoiceQuestion;
 use Symfony\Component\Console\Question\Question;
 use wenbinye\tars\cli\Config;
 
-class ConfigureCommand extends Command
+class ConfigureCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         $this->setName('configure')
             ->setDescription('Configures API parameters');
         $this->addOption('config', null, InputOption::VALUE_REQUIRED, 'config file path');
+        $this->addOption('debug', null, InputOption::VALUE_NONE, 'show debug');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    protected function handle(): void
     {
+        $input = $this->input;
+        $output = $this->output;
         $config = Config::getInstance();
         /** @var QuestionHelper $helper */
         $helper = $this->getHelper('question');
@@ -32,9 +33,10 @@ class ConfigureCommand extends Command
             $this->createQuestion('API Token', $config->getToken() ?: '', false)));
         $config->setTemplate($helper->ask($input, $output,
             $this->createQuestion('Default template', $config->getTemplate() ?: 'tars.tarsphp.default')));
-        Config::save($config, $input->getOption('config'));
 
-        return 0;
+        $config->setNode($helper->ask($input, $output,
+            new ChoiceQuestion('Default node:', $this->getNodes(), $config->getNode())));
+        Config::save($config, $input->getOption('config'));
     }
 
     protected function createQuestion(string $prompt, $default = null, bool $required = true): Question
@@ -54,5 +56,10 @@ class ConfigureCommand extends Command
         }
 
         return $question;
+    }
+
+    private function getNodes(): array
+    {
+        return $this->getTarsClient()->get('node_list');
     }
 }

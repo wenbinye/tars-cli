@@ -26,6 +26,11 @@ class Config
     private $template;
 
     /**
+     * @var string
+     */
+    private $node;
+
+    /**
      * Config constructor.
      *
      * @param $endpoint
@@ -36,6 +41,7 @@ class Config
         $this->endpoint = $endpoint;
         $this->token = $token;
         $this->template = $template;
+        $this->node = '';
     }
 
     public function getEndpoint(): string
@@ -66,6 +72,16 @@ class Config
     public function setTemplate(string $template): void
     {
         $this->template = $template;
+    }
+
+    public function getNode(): string
+    {
+        return $this->node;
+    }
+
+    public function setNode(string $node): void
+    {
+        $this->node = $node;
     }
 
     public static function getInstance(): self
