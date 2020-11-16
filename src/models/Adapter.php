@@ -46,6 +46,10 @@ class Adapter
      * @var string
      */
     private $handleGroup;
+    /**
+     * @var string
+     */
+    private $protocol;
 
     public function getId(): int
     {
@@ -167,10 +171,23 @@ class Adapter
         return $this;
     }
 
+    public function getProtocol(): string
+    {
+        return $this->protocol;
+    }
+
+    public function setProtocol(string $protocol): Adapter
+    {
+        $this->protocol = $protocol;
+
+        return $this;
+    }
+
     public static function fromArray($info): self
     {
         $adapter = new self();
         $adapter->id = (int) $info['id'];
+        $adapter->protocol = $info['protocol'] ?? 'tars';
         $adapter->server = new ServerName($info['application'], $info['server_name']);
         $adapter->endpoint = Endpoint::fromString($info['endpoint']);
         $adapter->name = $info['adapter_name'];

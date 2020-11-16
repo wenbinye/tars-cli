@@ -75,7 +75,7 @@ class NodeListCommand extends AbstractCommand
             $servers = [$this->getTarsClient()->getServer($serverId)];
         } else {
             $app = $this->input->getOption('app');
-            $servers = $this->getTarsClient()->getServers($app);
+            $servers = $this->getTarsClient()->getAllServers($app);
         }
         $table = $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At']);
         foreach ($servers as $server) {

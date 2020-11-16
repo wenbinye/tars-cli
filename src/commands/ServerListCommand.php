@@ -15,14 +15,12 @@ class ServerListCommand extends AbstractCommand
         $this->setName('server:list');
         $this->setDescription('Lists server by app or id');
         $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Display all application include tars');
-        $this->addOption('app', null, InputOption::VALUE_REQUIRED, 'Display server of the app');
-        $this->addArgument('server', InputArgument::OPTIONAL, 'Server id or name');
+        $this->addArgument('server', InputArgument::OPTIONAL, 'Server id or name or app name');
     }
 
     protected function handle(): void
     {
-        if ($this->input->getOption('app')
-            || $this->input->getArgument('server')) {
+        if ($this->input->getArgument('server')) {
             $this->listAppServers();
         } else {
             $this->listServers();
@@ -45,12 +43,12 @@ class ServerListCommand extends AbstractCommand
 
     private function listAppServers(): void
     {
-        $serverId = $this->input->getArgument('server');
-        if (!empty($serverId)) {
-            $servers = [$this->getTarsClient()->getServer($serverId)];
+        $serverName = $this->input->getArgument('server');
+        if (false !== strpos($serverName, '.')) {
+            $servers = $this->getTarsClient()->getServers($serverName);
         } else {
-            $app = $this->input->getOption('app');
-            $servers = $this->getTarsClient()->getServers($app);
+            $appName = $serverName;
+            $servers = $this->getTarsClient()->getAllServers($appName);
         }
         $table = $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At']);
         foreach ($servers as $server) {

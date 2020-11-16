@@ -127,9 +127,7 @@ class TarsClient implements LoggerAwareInterface
     public function getServer($serverIdOrName): Server
     {
         if (is_numeric($serverIdOrName)) {
-            $this->get('server', ['id' => $serverIdOrName]);
-
-            return Server::fromArray($this->getLastResult());
+            return $this->getServerById((int) $serverIdOrName);
         }
 
         if ($serverIdOrName instanceof ServerName) {
@@ -137,18 +135,21 @@ class TarsClient implements LoggerAwareInterface
         } else {
             $serverName = $this->getServerName($serverIdOrName);
         }
-        foreach ($this->getServers($serverName->getApplication()) as $server) {
-            if ($server->getServerName() === $serverName->getServerName()) {
-                return $server;
-            }
-        }
-        throw new \InvalidArgumentException("Cannot find server match $serverIdOrName");
+
+        return $this->getServers((string) $serverName)[0];
+    }
+
+    protected function getServerById(int $serverId): Server
+    {
+        $this->get('server', ['id' => $serverId]);
+
+        return Server::fromArray($this->getLastResult());
     }
 
     public function getServerName(string $serverIdOrName): ServerName
     {
         if (is_numeric($serverIdOrName)) {
-            return $this->getServer((int) $serverIdOrName)->getServer();
+            return $this->getServerById((int) $serverIdOrName)->getServer();
         }
 
         if (false !== strpos($serverIdOrName, '.')) {
@@ -184,12 +185,31 @@ class TarsClient implements LoggerAwareInterface
         return $servers;
     }
 
+    public function getAllServers(string $app): array
+    {
+        return array_map([Server::class, 'fromArray'], $this->get('server_list', ['tree_node_id' => '1'.$app]));
+    }
+
     /**
      * @return Server[]
      */
-    public function getServers(string $app): array
+    public function getServers(string $serverName): array
     {
-        return array_map([Server::class, 'fromArray'], $this->get('server_list', ['tree_node_id' => '1'.$app]));
+        if (is_numeric($serverName)) {
+            return [$this->getServerById($serverName)];
+        } elseif (false === strpos($serverName, '.')) {
+            throw new \InvalidArgumentException('');
+        } else {
+            [$appName, $serverName] = explode('.', $serverName, 2);
+            $servers = array_values(array_filter($this->getAllServers($appName), static function (Server $server) use ($serverName): bool {
+                return $server->getServerName() === $serverName;
+            }));
+            if (empty($servers)) {
+                throw new \InvalidArgumentException("Server {$appName}.{$serverName} does not exist");
+            }
+
+            return $servers;
+        }
     }
 
     /**
