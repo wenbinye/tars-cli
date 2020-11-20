@@ -27,17 +27,9 @@ class TaskBuilder
      */
     private $onTaskSend;
     /**
-     * @var callable
+     * @var callable[]
      */
-    private $onSuccess;
-    /**
-     * @var callable
-     */
-    private $onFail;
-    /**
-     * @var callable
-     */
-    private $onRunning;
+    private $callbacks;
     /**
      * @var int
      */
@@ -107,40 +99,62 @@ class TaskBuilder
         return $this;
     }
 
-    public function getOnSuccess(): callable
+    public function getOnSuccess(): ?callable
     {
-        return $this->onSuccess;
+        return $this->getCallback(Task::STATUS_SUCCESS);
     }
 
     public function setOnSuccess(callable $onSuccess): TaskBuilder
     {
-        $this->onSuccess = $onSuccess;
+        $this->setCallback(Task::STATUS_SUCCESS, $onSuccess);
 
         return $this;
     }
 
-    public function getOnFail(): callable
+    public function getOnFail(): ?callable
     {
-        return $this->onFail;
+        return $this->getCallback(Task::STATUS_FAILED);
     }
 
     public function setOnFail(callable $onFail): TaskBuilder
     {
-        $this->onFail = $onFail;
+        $this->setCallback(Task::STATUS_FAILED, $onFail);
 
         return $this;
     }
 
-    public function getOnRunning(): callable
+    public function getOnRunning(): ?callable
     {
-        return $this->onRunning;
+        return $this->getCallback(Task::STATUS_RUNNING);
     }
 
     public function setOnRunning(callable $onRunning): TaskBuilder
     {
-        $this->onRunning = $onRunning;
+        $this->setCallback(Task::STATUS_RUNNING, $onRunning);
 
         return $this;
+    }
+
+    public function getOnNotStart(): ?callable
+    {
+        return $this->getCallback(Task::STATUS_NOT_START);
+    }
+
+    public function setOnNotStart(callable $onNotStart): TaskBuilder
+    {
+        $this->setCallback(Task::STATUS_NOT_START, $onNotStart);
+
+        return $this;
+    }
+
+    private function getCallback(string $name): ?callable
+    {
+        return $this->callbacks[$name] ?? null;
+    }
+
+    private function setCallback(string $name, callable $callback): void
+    {
+        $this->callbacks[$name] = $callback;
     }
 
     public function getMaxTryTimes(): int
@@ -170,14 +184,15 @@ class TaskBuilder
     public function build(): Task
     {
         $dummyCallback = static function () {};
-        if (!$this->onSuccess) {
-            $this->onSuccess = $dummyCallback;
-        }
-        if (!$this->onFail) {
-            $this->onFail = $dummyCallback;
-        }
-        if (!$this->onRunning) {
-            $this->onRunning = $dummyCallback;
+        foreach ([
+                     Task::STATUS_SUCCESS,
+                     Task::STATUS_FAILED,
+                     Task::STATUS_RUNNING,
+                     Task::STATUS_NOT_START,
+                     ] as $name) {
+            if (!isset($this->callbacks[$name])) {
+                $this->callbacks[$name] = $dummyCallback;
+            }
         }
         if (!$this->onTaskSend) {
             $this->onTaskSend = $dummyCallback;
@@ -190,7 +205,6 @@ class TaskBuilder
         }
 
         return new Task($this->tarsClient, $this->command, $this->serverId, $this->parameters,
-            $this->onTaskSend, $this->onSuccess, $this->onFail,
-        $this->onRunning, $this->maxTryTimes, $this->sleepInterval);
+            $this->onTaskSend, $this->callbacks, $this->maxTryTimes, $this->sleepInterval);
     }
 }

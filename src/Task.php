@@ -8,6 +8,11 @@ use wenbinye\tars\cli\exception\BadResponseException;
 
 class Task
 {
+    public const STATUS_SUCCESS = 'EM_I_SUCCESS';
+    public const STATUS_FAILED = 'EM_I_FAILED';
+    public const STATUS_NOT_START = 'EM_I_NOT_START';
+    public const STATUS_RUNNING = 'EM_I_RUNNING';
+
     /**
      * @var TarsClient
      */
@@ -32,15 +37,7 @@ class Task
     /**
      * @var callable
      */
-    private $onSuccess;
-    /**
-     * @var callable
-     */
-    private $onFail;
-    /**
-     * @var callable
-     */
-    private $onRunning;
+    private $callbacks;
 
     /**
      * @var int
@@ -52,8 +49,7 @@ class Task
     private $sleepInterval;
 
     public function __construct(TarsClient $tarsClient, string $command, int $serverId, array $parameters,
-                                callable $onTaskSend, callable $onSuccess, callable $onFail,
-                                callable $onRunning, int $maxTryTimes, int $sleepInterval)
+                                callable $onTaskSend, array $callbacks, int $maxTryTimes, int $sleepInterval)
     {
         $this->tarsClient = $tarsClient;
         $this->command = $command;
@@ -61,9 +57,7 @@ class Task
         $this->parameters = $parameters;
         $this->maxTryTimes = $maxTryTimes;
         $this->onTaskSend = $onTaskSend;
-        $this->onSuccess = $onSuccess;
-        $this->onFail = $onFail;
-        $this->onRunning = $onRunning;
+        $this->callbacks = $callbacks;
         $this->sleepInterval = $sleepInterval;
     }
 
@@ -90,22 +84,14 @@ class Task
             if (!$status) {
                 throw new \InvalidArgumentException("Cannot get task status $taskNo");
             }
-            if ('EM_I_SUCCESS' === $status) {
-                call_user_func($this->onSuccess, $ret['items'][0]['execute_info']);
-
-                return;
-            }
-
-            if ('EM_I_FAILED' === $status) {
-                call_user_func($this->onFail, $ret['items'][0]['execute_info']);
-
-                return;
-            }
-
-            if ('EM_I_RUNNING' !== $status) {
+            if (isset($this->callbacks[$status])) {
+                call_user_func($this->callbacks[$status], $ret['items'][0]['execute_info']);
+                if (self::STATUS_RUNNING !== $status) {
+                    return;
+                }
+            } else {
                 throw new BadResponseException("Unknown task status $status");
             }
-            call_user_func($this->onRunning);
             sleep($this->sleepInterval);
         }
     }

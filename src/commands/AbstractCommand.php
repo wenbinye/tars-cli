@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use wenbinye\tars\cli\Config;
+use wenbinye\tars\cli\exception\NotStartException;
 use wenbinye\tars\cli\models\Server;
 use wenbinye\tars\cli\TarsClient;
 use wenbinye\tars\cli\Task;
@@ -105,28 +106,40 @@ abstract class AbstractCommand extends Command
 
     protected function applyPatch(int $patchId, Server $server): void
     {
-        Task::builder()
-            ->setTarsClient($this->getTarsClient())
-            ->setServerId($server->getId())
-            ->setCommand('patch_tars')
-            ->setParameters([
-                'patch_id' => $patchId,
-                'bak_flag' => false,
-                'update_text' => '',
-            ])
-            ->setOnSuccess(function ($statusInfo) use ($patchId, $server) {
-                $this->output->writeln("> <info> $statusInfo</info>");
-                $this->output->writeln("<info>Apply patch $patchId to $server successfully</info>");
-            })
-            ->setOnFail(function ($statusInfo) use ($patchId, $server) {
-                $this->output->writeln("> <error> $statusInfo</error>");
-                $this->output->writeln("<error>Fail to apply patch $patchId to $server</error>");
-            })
-            ->setOnRunning(function () {
-                $this->output->writeln('<info>task is running</info>');
-            })
-            ->build()
-            ->run();
+        $retries = 5;
+        while ($retries > 0) {
+            try {
+                Task::builder()
+                    ->setTarsClient($this->getTarsClient())
+                    ->setServerId($server->getId())
+                    ->setCommand('patch_tars')
+                    ->setParameters([
+                        'patch_id' => $patchId,
+                        'bak_flag' => false,
+                        'update_text' => '',
+                    ])
+                    ->setOnSuccess(function ($statusInfo) use ($patchId, $server) {
+                        $this->output->writeln("> <info> $statusInfo</info>");
+                        $this->output->writeln("<info>Apply patch $patchId to $server successfully</info>");
+                    })
+                    ->setOnFail(function ($statusInfo) use ($patchId, $server) {
+                        $this->output->writeln("> <error> $statusInfo</error>");
+                        $this->output->writeln("<error>Fail to apply patch $patchId to $server</error>");
+                    })
+                    ->setOnNotStart(function ($statusInfo) use ($patchId, $server) {
+                        throw new NotStartException("Fail to apply patch $patchId to $server: ".$statusInfo);
+                    })
+                    ->setOnRunning(function () {
+                        $this->output->writeln('<info>task is running</info>');
+                    })
+                    ->build()
+                    ->run();
+                break;
+            } catch (NotStartException $e) {
+                --$retries;
+                $this->output->writeln("<error>retry patch, error: {$e->getMessage()}</error>");
+            }
+        }
     }
 
     protected function stopServer(Server $server): void
