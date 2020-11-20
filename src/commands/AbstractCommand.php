@@ -106,7 +106,7 @@ abstract class AbstractCommand extends Command
 
     protected function applyPatch(int $patchId, Server $server): void
     {
-        $retries = 5;
+        $retries = 10;
         while ($retries > 0) {
             try {
                 Task::builder()
@@ -137,6 +137,10 @@ abstract class AbstractCommand extends Command
                 break;
             } catch (NotStartException $e) {
                 --$retries;
+                if ($retries <= 0) {
+                    throw new \RuntimeException('patch failed', 0, $e);
+                }
+                sleep(5);
                 $this->output->writeln("<error>retry patch, error: {$e->getMessage()}</error>");
             }
         }
