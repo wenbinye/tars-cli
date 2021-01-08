@@ -8,7 +8,6 @@ use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -60,13 +59,6 @@ class TarsClient implements LoggerAwareInterface
             if ($this->debug) {
                 $handler->push(Middleware::log($this->logger, new MessageFormatter(MessageFormatter::DEBUG)));
             }
-            $handler->push(Middleware::mapRequest(function (RequestInterface $req) {
-                $uri = $req->getUri();
-                parse_str($uri->getQuery(), $query);
-                $query['ticket'] = $this->config->getToken();
-
-                return $req->withUri($uri->withQuery(http_build_query($query)));
-            }));
             $handler->push(Middleware::mapResponse(function (ResponseInterface $response) {
                 $data = json_decode((string) $response->getBody(), true);
                 if (!isset($data['ret_code'])) {
@@ -81,6 +73,9 @@ class TarsClient implements LoggerAwareInterface
             }));
             $this->httpClient = new Client([
                 'handler' => $handler,
+                'headers' => [
+                    'cookie' => 'ticket='.$this->config->getToken(),
+                ],
                 'base_uri' => $this->config->getEndpoint().'/api/',
             ]);
         }

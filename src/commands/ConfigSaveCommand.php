@@ -58,14 +58,54 @@ class ConfigSaveCommand extends AbstractCommand
             if (!$name) {
                 throw new \InvalidArgumentException('--name 参数文件名不能为空');
             }
-            $result = $this->getTarsClient()->postJson('add_config_file', [
-                'level' => $level,
-                'application' => $serverName->getApplication(),
-                'server_name' => $serverName->getServerName(),
-                'filename' => $name,
-                'config' => $content,
-            ]);
-            $this->output->writeln("<info>成功添加 {$result['server_name']} 配置 {$result['filename']}</info>");
+            try {
+                $configId = $this->getConfigByName($name);
+                $reason = $this->input->getOption('reason') ?? date('Y-m-d').' 更新配置';
+                $result = $this->getTarsClient()->postJson('update_config_file', [
+                    'id' => $configId,
+                    'config' => $content,
+                    'reason' => $reason,
+                ]);
+                $this->output->writeln("<info>成功更新 {$result['server_name']} 配置 {$result['filename']}</info>");
+            } catch (\InvalidArgumentException $e) {
+                $result = $this->getTarsClient()->postJson('add_config_file', [
+                    'level' => $level,
+                    'application' => $serverName->getApplication(),
+                    'server_name' => $serverName->getServerName(),
+                    'filename' => $name,
+                    'config' => $content,
+                ]);
+                $this->output->writeln("<info>成功添加 {$result['server_name']} 配置 {$result['filename']}</info>");
+            }
         }
+    }
+
+    private function getConfigByName($configName): int
+    {
+        foreach ($this->getConfigFiles() as $file) {
+            if ($file['filename'] === $configName) {
+                return (int) $file['id'];
+            }
+        }
+        throw new \InvalidArgumentException("配置文件 $configName 不存在");
+    }
+
+    protected function getConfigFiles(): array
+    {
+        $level = ConfigLevel::fromName($this->input->getOption('level'));
+        if (!isset($level)) {
+            throw new \InvalidArgumentException('level 级别不正确');
+        }
+        $serverId = $this->input->getArgument('server');
+        if (!$serverId) {
+            throw new \InvalidArgumentException('server 不能为空');
+        }
+        $serverName = $this->getTarsClient()->getServerName($serverId);
+
+        return $this->getTarsClient()->get('config_file_list', [
+            'application' => $serverName->getApplication(),
+            'server_name' => $serverName->getServerName(),
+            'level' => $level,
+        ]);
     }
 }
