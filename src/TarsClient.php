@@ -74,7 +74,7 @@ class TarsClient implements LoggerAwareInterface
             $this->httpClient = new Client([
                 'handler' => $handler,
                 'headers' => [
-                    'cookie' => 'ticket='.$this->config->getToken(),
+                    'apikey' => $this->config->getToken(),
                 ],
                 'base_uri' => $this->config->getEndpoint().'/api/',
             ]);
