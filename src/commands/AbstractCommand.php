@@ -146,45 +146,45 @@ abstract class AbstractCommand extends Command
         }
     }
 
-    protected function stopServer(Server $server): void
+    protected function runOnServer(Server $server, string $cmd): void
     {
         Task::builder()
             ->setTarsClient($this->getTarsClient())
             ->setServerId($server->getId())
-            ->setCommand('stop')
-            ->setOnSuccess(function ($statusInfo) use ($server) {
+            ->setCommand($cmd)
+            ->setOnSuccess(function ($statusInfo) use ($server, $cmd) {
                 $this->output->writeln("> <info>$statusInfo</info>");
-                $this->output->writeln("<info>Server $server was stopped!</info>");
+                $this->output->writeln("<info>Server $server was {$cmd}ed!</info>");
             })
-            ->setOnFail(function ($statusInfo) use ($server) {
+            ->setOnFail(function ($statusInfo) use ($server, $cmd) {
                 $this->output->writeln("> <error>$statusInfo</error>");
-                $this->output->writeln("<error>Fail to stop $server</error>");
-            })
-            ->setOnRunning(function () {
-                $this->output->writeln('<info>task is running</info>');
-            })
-            ->build()->run();
-    }
-
-    protected function removeServer(Server $server): void
-    {
-        Task::builder()
-            ->setTarsClient($this->getTarsClient())
-            ->setServerId($server->getId())
-            ->setCommand('undeploy_tars')
-            ->setOnSuccess(function ($statusInfo) use ($server) {
-                $this->output->writeln("> <info>$statusInfo</info>");
-                $this->output->writeln("<info>Server $server was destroyed!</info>");
-            })
-            ->setOnFail(function ($statusInfo) use ($server) {
-                $this->output->writeln("> <error>$statusInfo</error>");
-                $this->output->writeln("<error>Fail to destroy $server</error>");
+                $this->output->writeln("<error>Fail to $cmd $server</error>");
             })
             ->setOnRunning(function () {
                 $this->output->writeln('<info>task is running</info>');
             })
             ->build()
             ->run();
+    }
+
+    protected function startServer(Server $server): void
+    {
+        $this->runOnServer($server, 'start');
+    }
+
+    protected function restartServer(Server $server): void
+    {
+        $this->runOnServer($server, 'restart');
+    }
+
+    protected function stopServer(Server $server): void
+    {
+        $this->runOnServer($server, 'stop');
+    }
+
+    protected function removeServer(Server $server): void
+    {
+        $this->runOnServer($server, 'undeploy_tars');
     }
 
     abstract protected function handle(): void;

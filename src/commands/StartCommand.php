@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
-class StopCommand extends AbstractCommand
+class StartCommand extends AbstractCommand
 {
     protected function configure(): void
     {
         parent::configure();
-        $this->setName('stop');
-        $this->setDescription('Stops the server or node');
+        $this->setName('start');
+        $this->setDescription('Starts the server');
+        $this->addOption('restart', null, InputOption::VALUE_NONE, 'Restart server');
         $this->addArgument('server', InputArgument::REQUIRED, 'The server id or name or node name');
     }
 
@@ -20,26 +22,31 @@ class StopCommand extends AbstractCommand
     {
         $serverOrNode = $this->input->getArgument('server');
         if (in_array($serverOrNode, $this->getTarsClient()->getNodeList(), true)) {
-            $this->stopServerOnNode($serverOrNode);
+            $this->startServerOnNode($serverOrNode);
         } else {
             $servers = $this->getTarsClient()->getServers($serverOrNode);
             foreach ($servers as $server) {
-                $this->stopServer($server);
+                if ($this->input->getOption('restart')) {
+                    $this->restartServer($server);
+                } else {
+                    $this->startServer($server);
+                }
             }
         }
     }
 
-    private function stopServerOnNode(string $nodeName): void
+    private function startServerOnNode(string $nodeName): void
     {
         $apps = [];
         foreach ($this->getTarsClient()->getServerNames() as $serverName) {
             $apps[$serverName->getApplication()] = true;
         }
+        $cmd = $this->input->getOption('restart') ? 'restart' : 'start';
         foreach (array_keys($apps) as $app) {
             foreach ($this->getTarsClient()->getAllServers($app) as $server) {
                 if ($server->getNodeName() === $nodeName) {
-                    $this->output->writeln("<info>Stop {$server->getServerName()} on $nodeName</info>");
-                    $this->stopServer($server);
+                    $this->output->writeln("<info>$cmd {$server->getServerName()} on $nodeName</info>");
+                    $this->runOnServer($server, $cmd);
                 }
             }
         }

@@ -119,6 +119,11 @@ class TarsClient implements LoggerAwareInterface
         return $this->result;
     }
 
+    public function getNodeList(): array
+    {
+        return $this->get('node_list');
+    }
+
     public function getServer($serverIdOrName): Server
     {
         if (is_numeric($serverIdOrName)) {
@@ -180,6 +185,9 @@ class TarsClient implements LoggerAwareInterface
         return $servers;
     }
 
+    /**
+     * @return Server[]
+     */
     public function getAllServers(string $app): array
     {
         return array_map([Server::class, 'fromArray'], $this->get('server_list', ['tree_node_id' => '1'.$app]));

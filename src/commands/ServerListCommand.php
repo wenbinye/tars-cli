@@ -6,6 +6,7 @@ namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use wenbinye\tars\cli\models\Server;
 
 class ServerListCommand extends AbstractCommand
 {
@@ -15,6 +16,7 @@ class ServerListCommand extends AbstractCommand
         $this->setName('server:list');
         $this->setDescription('Lists server by app or id');
         $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Display all application include tars');
+        $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'Display server on the node');
         $this->addArgument('server', InputArgument::OPTIONAL, 'Server id or name or app name');
     }
 
@@ -22,6 +24,8 @@ class ServerListCommand extends AbstractCommand
     {
         if ($this->input->getArgument('server')) {
             $this->listAppServers();
+        } elseif ($this->input->getOption('node')) {
+            $this->listNodeServers($this->input->getOption('node'));
         } else {
             $this->listServers();
         }
@@ -41,6 +45,23 @@ class ServerListCommand extends AbstractCommand
         $table->render();
     }
 
+    private function listNodeServers(string $nodeName): void
+    {
+        $apps = [];
+        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
+            $apps[$serverName->getApplication()] = true;
+        }
+        $servers = [];
+        foreach (array_keys($apps) as $app) {
+            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
+                if ($server->getNodeName() === $nodeName) {
+                    $servers[] = $server;
+                }
+            }
+        }
+        $this->showServers($servers);
+    }
+
     private function listAppServers(): void
     {
         $serverName = $this->input->getArgument('server');
@@ -50,6 +71,25 @@ class ServerListCommand extends AbstractCommand
             $appName = $serverName;
             $servers = $this->getTarsClient()->getAllServers($appName);
         }
+        $this->showServers($servers);
+    }
+
+    private function stateDesc(string $state): string
+    {
+        if (!empty($state)) {
+            $tag = 'active' === $state ? 'info' : 'error';
+
+            return "<$tag>$state</$tag>";
+        }
+
+        return $state;
+    }
+
+    /**
+     * @param Server[] $servers
+     */
+    private function showServers(array $servers): void
+    {
         $table = $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At']);
         foreach ($servers as $server) {
             $table->addRow([$server->getId(),
@@ -62,16 +102,5 @@ class ServerListCommand extends AbstractCommand
                 $server->getPatchTime() ? $server->getPatchTime()->toDateTimeString() : '', ]);
         }
         $table->render();
-    }
-
-    private function stateDesc(string $state): string
-    {
-        if (!empty($state)) {
-            $tag = 'active' === $state ? 'info' : 'error';
-
-            return "<$tag>$state</$tag>";
-        }
-
-        return $state;
     }
 }
