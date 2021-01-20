@@ -226,7 +226,7 @@ class Server
 
     public function __toString()
     {
-        return (string) $this->server;
+        return $this->server.' on '.$this->nodeName;
     }
 
     public static function fromArray(array $info): self

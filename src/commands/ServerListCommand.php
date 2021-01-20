@@ -90,17 +90,21 @@ class ServerListCommand extends AbstractCommand
      */
     private function showServers(array $servers): void
     {
-        $table = $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At']);
+        $rows = [];
         foreach ($servers as $server) {
-            $table->addRow([$server->getId(),
+            $rows[] = [
+                $server->getId(),
                 (string) $server,
                 $server->getNodeName(),
                 $this->stateDesc($server->getSettingState()),
                 $this->stateDesc($server->getPresentState()),
                 $server->getProcessId(),
                 $server->getPatchVersion(),
-                $server->getPatchTime() ? $server->getPatchTime()->toDateTimeString() : '', ]);
+                $server->getPatchTime() ? $server->getPatchTime()->toDateTimeString() : '',
+            ];
         }
-        $table->render();
+        $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At'])
+            ->addRows($rows)
+            ->render();
     }
 }

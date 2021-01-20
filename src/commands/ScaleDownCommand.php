@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
 
-use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Question\ChoiceQuestion;
+use Symfony\Component\Console\Input\InputOption;
 
 class ScaleDownCommand extends AbstractCommand
 {
@@ -15,26 +14,31 @@ class ScaleDownCommand extends AbstractCommand
         parent::configure();
         $this->setName('scale:down');
         $this->setDescription('Scale down the server');
-        $this->addArgument('server', InputArgument::REQUIRED, 'The server name');
-        $this->addArgument('node', InputArgument::OPTIONAL, 'The node name');
+        $this->addArgument('server', InputArgument::OPTIONAL, 'The server name or node');
+        $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'The node name');
     }
 
     protected function handle(): void
     {
-        $serverName = $this->input->getArgument('server');
-        if (is_numeric($serverName)) {
-            $server = $this->getTarsClient()->getServer($serverName);
+        $serverOrNode = $this->input->getArgument('server');
+        if ($this->getTarsClient()->hasNode($serverOrNode)) {
+            if ($this->io->confirm("Destroy all server on node $serverOrNode")) {
+                $this->removeServerOnNode($serverOrNode);
+            }
+
+            return;
+        }
+        if (is_numeric($serverOrNode)) {
+            $server = $this->getTarsClient()->getServer($serverOrNode);
         } else {
-            $servers = $this->getTarsClient()->getServers($serverName);
+            $servers = $this->getTarsClient()->getServers($serverOrNode);
             $usedNodes = [];
             foreach ($servers as $server) {
                 $usedNodes[] = $server->getNodeName();
             }
             $node = $this->input->getArgument('node');
             if (!$node) {
-                /** @var QuestionHelper $helper */
-                $helper = $this->getHelper('question');
-                $node = $helper->ask($this->input, $this->output, new ChoiceQuestion('choose node: ', $usedNodes));
+                $node = $this->io->choice('choose node: ', $usedNodes);
             }
             if (!in_array($node, $usedNodes, true)) {
                 throw new \InvalidArgumentException("$node 不正确，必须是".implode(',', $usedNodes).'其中之一');
@@ -49,5 +53,21 @@ class ScaleDownCommand extends AbstractCommand
         }
         $this->stopServer($server);
         $this->removeServer($server);
+    }
+
+    private function removeServerOnNode(string $nodeName): void
+    {
+        $apps = [];
+        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
+            $apps[$serverName->getApplication()] = true;
+        }
+        foreach (array_keys($apps) as $app) {
+            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
+                if ($server->getNodeName() === $nodeName) {
+                    $this->stopServer($server);
+                    $this->removeServer($server);
+                }
+            }
+        }
     }
 }

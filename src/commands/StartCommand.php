@@ -45,7 +45,7 @@ class StartCommand extends AbstractCommand
         foreach (array_keys($apps) as $app) {
             foreach ($this->getTarsClient()->getAllServers($app) as $server) {
                 if ($server->getNodeName() === $nodeName) {
-                    $this->output->writeln("<info>$cmd {$server->getServerName()} on $nodeName</info>");
+                    $this->io->note("$cmd {$server->getServerName()} on $nodeName");
                     $this->runOnServer($server, $cmd);
                 }
             }

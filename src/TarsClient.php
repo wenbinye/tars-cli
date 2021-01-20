@@ -119,6 +119,11 @@ class TarsClient implements LoggerAwareInterface
         return $this->result;
     }
 
+    public function hasNode(string $nodeName): bool
+    {
+        return in_array($nodeName, $this->getNodeList(), true);
+    }
+
     public function getNodeList(): array
     {
         return $this->get('node_list');
@@ -199,7 +204,7 @@ class TarsClient implements LoggerAwareInterface
     public function getServers(string $serverName): array
     {
         if (is_numeric($serverName)) {
-            return [$this->getServerById($serverName)];
+            return [$this->getServerById((int) $serverName)];
         } elseif (false === strpos($serverName, '.')) {
             throw new \InvalidArgumentException('');
         } else {

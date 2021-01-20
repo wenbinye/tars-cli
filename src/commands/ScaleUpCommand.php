@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace wenbinye\tars\cli\commands;
 
-use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Question\ChoiceQuestion;
+use wenbinye\tars\cli\models\Server;
 
 class ScaleUpCommand extends AbstractCommand
 {
@@ -16,37 +15,47 @@ class ScaleUpCommand extends AbstractCommand
         parent::configure();
         $this->setName('scale:up');
         $this->setDescription('Scale up the server');
-        $this->addArgument('server', InputArgument::REQUIRED, 'The server name');
-        $this->addArgument('node', InputArgument::OPTIONAL, 'The node name');
+        $this->addArgument('server', InputArgument::REQUIRED, 'The server name or node name');
+        $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'The node name');
         $this->addOption('no-patch', null, InputOption::VALUE_NONE, '只扩容不部署文件');
     }
 
     protected function handle(): void
     {
-        $servers = $this->getTarsClient()->getServers($this->input->getArgument('server'));
-        $usedNodes = [];
+        $serverOrNode = $this->input->getArgument('server');
+        if ($this->getTarsClient()->hasNode($serverOrNode)) {
+            $this->scaleUpFromNode($serverOrNode, $this->getNode());
+        } else {
+            $servers = $this->getTarsClient()->getServers($serverOrNode);
+            $usedNodes = [];
+            foreach ($servers as $server) {
+                $usedNodes[] = $server->getNodeName();
+            }
+            $server = $servers[0];
+
+            $node = $this->getNode($usedNodes);
+            $this->scaleUp($server, $node);
+        }
+    }
+
+    private function scaleUpFromNode(string $fromNode, string $node): void
+    {
+        $apps = [];
+        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
+            $apps[$serverName->getApplication()] = true;
+        }
+        foreach (array_keys($apps) as $app) {
+            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
+                if ($server->getNodeName() === $fromNode) {
+                    $this->scaleUp($server, $node);
+                }
+            }
+        }
+    }
+
+    private function scaleUp(Server $server, string $node): void
+    {
         $adapterPorts = [];
-        foreach ($servers as $server) {
-            $usedNodes[] = $server->getNodeName();
-        }
-        $server = $servers[0];
-
-        $allNodes = $this->getTarsClient()->get('node_list');
-        $availNodes = array_values(array_diff($allNodes, $usedNodes));
-        if (empty($availNodes)) {
-            throw new \RuntimeException(sprintf('无可用节点，已使用节点：%s', implode(',', $usedNodes)));
-        }
-        $node = $this->input->getArgument('node');
-        if (!$node) {
-            /** @var QuestionHelper $helper */
-            $helper = $this->getHelper('question');
-            $node = $helper->ask($this->input, $this->output, new ChoiceQuestion('choose node: ', $availNodes));
-        }
-        if (!in_array($node, $availNodes, true)) {
-            throw new \InvalidArgumentException("$node 不正确，必须是".implode(',', $availNodes).'其中之一');
-        }
-
-        $fromNode = $usedNodes[0];
         foreach ($this->getTarsClient()->getAdapters($server->getId()) as $adapter) {
             $adapterPorts[$adapter->getName()] = $adapter->getEndpoint()->getPort();
         }
@@ -54,7 +63,7 @@ class ScaleUpCommand extends AbstractCommand
             'application' => $server->getApplication(),
             'server_name' => $server->getServerName(),
             'set' => '',
-            'node_name' => $fromNode,
+            'node_name' => $server->getNodeName(),
             'expand_nodes' => [$node],
             'enable_set' => false,
             'set_name' => '',
@@ -78,11 +87,11 @@ class ScaleUpCommand extends AbstractCommand
             'application' => $server->getApplication(),
             'server_name' => $server->getServerName(),
             'set' => '',
-            'node_name' => $fromNode,
+            'node_name' => $server->getNodeName(),
             'copy_node_config' => true,
             'expand_preview_servers' => $adapters,
         ]);
-        $this->output->writeln("<info>成功扩容 {$server->getServerName()} 从 $fromNode 到 $node</info>");
+        $this->io->success("成功扩容 {$server} 到 $node");
 
         if ($this->input->getOption('no-patch')) {
             return;
@@ -103,11 +112,32 @@ class ScaleUpCommand extends AbstractCommand
             ]);
             if (!empty($ret)) {
                 $patchId = $ret['rows'][0]['id'];
-                $this->output->writeln("<info>发布代码 $patchId 到 {$newServer->getNodeName()}</info>");
+                $this->io->success("发布代码 $patchId 到 {$newServer}");
                 $this->applyPatch($patchId, $newServer);
             }
         } else {
-            $this->output->writeln('<error>无法查询到服务</error>');
+            $this->io->error('无法查询到服务');
         }
+    }
+
+    /**
+     * @param string[] $excludeNodes
+     */
+    protected function getNode(array $excludeNodes = []): string
+    {
+        $allNodes = $this->getTarsClient()->getNodeList();
+        $availNodes = array_values(array_diff($allNodes, $excludeNodes));
+        if (empty($availNodes)) {
+            throw new \RuntimeException(sprintf('无可用节点，已使用节点：%s', implode(',', $excludeNodes)));
+        }
+        $node = $this->input->getOption('node');
+        if (!$node) {
+            $node = $this->io->choice('choose node: ', $availNodes);
+        }
+        if (!in_array($node, $availNodes, true)) {
+            throw new \InvalidArgumentException("$node 不正确，必须是".implode(',', $availNodes).'其中之一');
+        }
+
+        return $node;
     }
 }

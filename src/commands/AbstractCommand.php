@@ -11,6 +11,8 @@ use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\StyleInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use wenbinye\tars\cli\Config;
 use wenbinye\tars\cli\exception\NotStartException;
 use wenbinye\tars\cli\models\Server;
@@ -30,6 +32,11 @@ abstract class AbstractCommand extends Command
     protected $output;
 
     /**
+     * @var StyleInterface
+     */
+    protected $io;
+
+    /**
      * @var TarsClient
      */
     private $tarsClient;
@@ -45,6 +52,8 @@ abstract class AbstractCommand extends Command
     {
         $this->input = $input;
         $this->output = $output;
+        $this->io = new SymfonyStyle($this->input, $this->output);
+
         $this->handle();
 
         return 0;
@@ -153,15 +162,15 @@ abstract class AbstractCommand extends Command
             ->setServerId($server->getId())
             ->setCommand($cmd)
             ->setOnSuccess(function ($statusInfo) use ($server, $cmd) {
-                $this->output->writeln("> <info>$statusInfo</info>");
-                $this->output->writeln("<info>Server $server was {$cmd}ed!</info>");
+                $this->io->text((string) $statusInfo);
+                $this->io->success("Server $server was {$cmd}ed!");
             })
             ->setOnFail(function ($statusInfo) use ($server, $cmd) {
-                $this->output->writeln("> <error>$statusInfo</error>");
-                $this->output->writeln("<error>Fail to $cmd $server</error>");
+                $this->io->error((string) $statusInfo);
+                $this->io->error("Fail to $cmd $server");
             })
             ->setOnRunning(function () {
-                $this->output->writeln('<info>task is running</info>');
+                $this->io->text('task is running');
             })
             ->build()
             ->run();
