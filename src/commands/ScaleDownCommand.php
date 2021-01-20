@@ -14,7 +14,7 @@ class ScaleDownCommand extends AbstractCommand
         parent::configure();
         $this->setName('scale:down');
         $this->setDescription('Scale down the server');
-        $this->addArgument('server', InputArgument::OPTIONAL, 'The server name or node');
+        $this->addArgument('server', InputArgument::REQUIRED, 'The server name or node');
         $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'The node name');
     }
 
@@ -36,7 +36,7 @@ class ScaleDownCommand extends AbstractCommand
             foreach ($servers as $server) {
                 $usedNodes[] = $server->getNodeName();
             }
-            $node = $this->input->getArgument('node');
+            $node = $this->input->getOption('node');
             if (!$node) {
                 $node = $this->io->choice('choose node: ', $usedNodes);
             }

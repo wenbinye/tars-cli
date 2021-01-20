@@ -16,16 +16,18 @@ class ServerListCommand extends AbstractCommand
         $this->setName('server:list');
         $this->setDescription('Lists server by app or id');
         $this->addOption('all', 'a', InputOption::VALUE_NONE, 'Display all application include tars');
-        $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'Display server on the node');
         $this->addArgument('server', InputArgument::OPTIONAL, 'Server id or name or app name');
     }
 
     protected function handle(): void
     {
-        if ($this->input->getArgument('server')) {
-            $this->listAppServers();
-        } elseif ($this->input->getOption('node')) {
-            $this->listNodeServers($this->input->getOption('node'));
+        $serverOrNode = $this->input->getArgument('server');
+        if ($serverOrNode) {
+            if ($this->getTarsClient()->hasNode($serverOrNode)) {
+                $this->listNodeServers($serverOrNode);
+            } else {
+                $this->listAppServers();
+            }
         } else {
             $this->listServers();
         }
@@ -94,7 +96,7 @@ class ServerListCommand extends AbstractCommand
         foreach ($servers as $server) {
             $rows[] = [
                 $server->getId(),
-                (string) $server,
+                (string) $server->getServer(),
                 $server->getNodeName(),
                 $this->stateDesc($server->getSettingState()),
                 $this->stateDesc($server->getPresentState()),

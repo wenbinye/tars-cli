@@ -15,8 +15,8 @@ class ScaleUpCommand extends AbstractCommand
         parent::configure();
         $this->setName('scale:up');
         $this->setDescription('Scale up the server');
-        $this->addArgument('server', InputArgument::REQUIRED, 'The server name or node name');
-        $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'The node name');
+        $this->addArgument('server', InputArgument::REQUIRED, 'The server name or from node name');
+        $this->addOption('node', null, InputOption::VALUE_REQUIRED, 'Scale to node name');
         $this->addOption('no-patch', null, InputOption::VALUE_NONE, '只扩容不部署文件');
     }
 
@@ -47,7 +47,17 @@ class ScaleUpCommand extends AbstractCommand
         foreach (array_keys($apps) as $app) {
             foreach ($this->getTarsClient()->getAllServers($app) as $server) {
                 if ($server->getNodeName() === $fromNode) {
-                    $this->scaleUp($server, $node);
+                    $found = false;
+                    foreach ($this->getTarsClient()->getServers((string) $server->getServer()) as $runningServer) {
+                        if ($runningServer->getNodeName() === $node) {
+                            $this->io->note("$runningServer already exist");
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $this->scaleUp($server, $node);
+                    }
                 }
             }
         }
