@@ -36,11 +36,10 @@ class ConfigListCommand extends AbstractCommand
     protected function showConfigFileList(): void
     {
         $files = $this->getConfigFiles();
-        $table = $this->createTable(['ID', '服务', '文件名称', '最后修改时间']);
-        foreach ($files as $file) {
-            $table->addRow([$file['id'], $file['server_name'], $file['filename'], $file['posttime']]);
-        }
-        $table->render();
+        $this->writeTable(['ID', '服务', '文件名称', '最后修改时间'],
+            array_map(static function ($file) {
+                return [$file['id'], $file['server_name'], $file['filename'], $file['posttime']];
+            }, $files));
     }
 
     private function showConfigByName($configName): void

@@ -39,18 +39,18 @@ class NodeListCommand extends AbstractCommand
         $ret = $this->getTarsClient()->get('list_tars_node', [
             'page_size' => 40,
         ]);
-        $table = $this->createTable(['Node', 'Status', 'Created At', 'Last Active Time', 'Version', 'Load']);
         $tz = date_default_timezone_get();
-        foreach ($ret['rows'] as $row) {
-            $table->addRow([
-                $row['node_name'],
-                $row['setting_state'],
-                Carbon::parse($row['last_reg_time'])->setTimezone($tz)->toDateTimeString(),
-                Carbon::parse($row['last_heartbeat'])->setTimezone($tz)->toDateTimeString(),
-                $row['tars_version'],
-                $row['load_avg15'],
-            ]);
-        }
-        $table->render();
+        $this->writeTable(
+            ['Node', 'Status', 'Created At', 'Last Active Time', 'Version', 'Load'],
+            array_map(static function ($row) use ($tz) {
+                return [
+                    $row['node_name'],
+                    $row['setting_state'],
+                    Carbon::parse($row['last_reg_time'])->setTimezone($tz)->toDateTimeString(),
+                    Carbon::parse($row['last_heartbeat'])->setTimezone($tz)->toDateTimeString(),
+                    $row['tars_version'],
+                    $row['load_avg15'],
+                ];
+            }, $ret['rows'] ?? []));
     }
 }

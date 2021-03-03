@@ -78,7 +78,7 @@ class ServerListCommand extends AbstractCommand
 
     private function stateDesc(string $state): string
     {
-        if (!empty($state)) {
+        if (!empty($state) && $this->isAscii()) {
             $tag = 'active' === $state ? 'info' : 'error';
 
             return "<$tag>$state</$tag>";
@@ -105,8 +105,6 @@ class ServerListCommand extends AbstractCommand
                 $server->getPatchTime() ? $server->getPatchTime()->toDateTimeString() : '',
             ];
         }
-        $this->createTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At'])
-            ->addRows($rows)
-            ->render();
+        $this->writeTable(['ID', 'Server', 'Node', 'Setting', 'Present', 'PID', 'Patch', 'Patched At'], $rows);
     }
 }

@@ -83,6 +83,18 @@ class TarsClient implements LoggerAwareInterface
         return $this->httpClient;
     }
 
+    public function request(string $method, string $uri, array $options = [])
+    {
+        $client = new Client([
+            'headers' => [
+                'apikey' => $this->config->getToken(),
+            ],
+            'base_uri' => $this->config->getEndpoint().'/api/',
+        ]);
+
+        return $client->request($method, $uri, $options);
+    }
+
     public function getConfig(): Config
     {
         return $this->config;

@@ -43,7 +43,7 @@ abstract class AbstractCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'output format, ascii|json');
+        $this->addOption('format', null, InputOption::VALUE_REQUIRED, 'output format, ascii|json', 'ascii');
         $this->addOption('config', null, InputOption::VALUE_REQUIRED, 'config file path');
         $this->addOption('debug', null, InputOption::VALUE_NONE, 'show debug');
     }
@@ -197,4 +197,30 @@ abstract class AbstractCommand extends Command
     }
 
     abstract protected function handle(): void;
+
+    protected function writeTable(array $header, array $rows, ?string $footer = null): void
+    {
+        if (!empty($rows)) {
+            if ($this->isAscii()) {
+                $table = $this->createTable($header);
+                $table->addRows($rows);
+                $table->render();
+                if (isset($footer)) {
+                    $this->output->writeln("<info>$footer</info>");
+                }
+            } else {
+                $this->output->writeln(json_encode(
+                    array_map(static function ($row) use ($header) {
+                        return array_combine($header, $row);
+                    }, $rows),
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
+                ));
+            }
+        }
+    }
+
+    protected function isAscii(): bool
+    {
+        return 'ascii' === $this->input->getOption('format');
+    }
 }

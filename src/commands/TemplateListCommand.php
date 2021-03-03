@@ -33,11 +33,10 @@ class TemplateListCommand extends AbstractCommand
         $templates = $this->getTarsClient()->get('query_profile_template', [
             'parents_name' => $this->input->getOption('parent'),
         ]);
-        $table = $this->createTable(['ID', '模板',	'父模板名',	'最后修改时间']);
-        foreach ($templates as $template) {
-            $table->addRow([$template['id'], $template['template_name'], $template['parents_name'], $template['posttime']]);
-        }
-        $table->render();
+        $this->writeTable(['ID', '模板', '父模板名', '最后修改时间'],
+            array_map(static function ($template) {
+                return [$template['id'], $template['template_name'], $template['parents_name'], $template['posttime']];
+            }, $templates));
     }
 
     private function showTemplate(): void
