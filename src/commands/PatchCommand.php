@@ -59,7 +59,7 @@ class PatchCommand extends AbstractCommand
             if ($this->input->getOption('no-apply')) {
                 return;
             }
-            foreach ($this->getTarsClient()->getServers((string) $serverName) as $server) {
+            foreach ($this->getTarsClient()->getServers($server) as $server) {
                 $this->applyPatch((int) $ret['id'], $server);
             }
         } else {
