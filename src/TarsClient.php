@@ -8,6 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
+use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -55,10 +56,7 @@ class TarsClient implements LoggerAwareInterface
     protected function getHttpClient(): Client
     {
         if (!$this->httpClient) {
-            $handler = HandlerStack::create();
-            if ($this->debug) {
-                $handler->push(Middleware::log($this->logger, new MessageFormatter(MessageFormatter::DEBUG)));
-            }
+            $handler = $this->createHandler();
             $handler->push(Middleware::mapResponse(function (ResponseInterface $response) {
                 $data = json_decode((string) $response->getBody(), true);
                 if (!isset($data['ret_code'])) {
@@ -73,9 +71,6 @@ class TarsClient implements LoggerAwareInterface
             }));
             $this->httpClient = new Client([
                 'handler' => $handler,
-                'headers' => [
-                    'apikey' => $this->config->getToken(),
-                ],
                 'base_uri' => $this->config->getEndpoint().'/api/',
             ]);
         }
@@ -86,9 +81,7 @@ class TarsClient implements LoggerAwareInterface
     public function request(string $method, string $uri, array $options = [])
     {
         $client = new Client([
-            'headers' => [
-                'apikey' => $this->config->getToken(),
-            ],
+            'handler' => $this->createHandler(),
             'base_uri' => $this->config->getEndpoint().'/api/',
         ]);
 
@@ -281,5 +274,22 @@ class TarsClient implements LoggerAwareInterface
         }
 
         return null;
+    }
+
+    protected function createHandler(): HandlerStack
+    {
+        $handler = HandlerStack::create();
+        if ($this->debug) {
+            $handler->push(Middleware::log($this->logger, new MessageFormatter(MessageFormatter::DEBUG)));
+        }
+        $handler->push(Middleware::mapRequest(function (RequestInterface $req) {
+            $uri = $req->getUri();
+            parse_str($uri->getQuery(), $query);
+            $query['ticket'] = $this->config->getToken();
+
+            return $req->withUri($uri->withQuery(http_build_query($query)));
+        }));
+
+        return $handler;
     }
 }
