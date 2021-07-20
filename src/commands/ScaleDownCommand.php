@@ -54,20 +54,4 @@ class ScaleDownCommand extends AbstractCommand
         $this->stopServer($server);
         $this->removeServer($server);
     }
-
-    private function removeServerOnNode(string $nodeName): void
-    {
-        $apps = [];
-        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
-            $apps[$serverName->getApplication()] = true;
-        }
-        foreach (array_keys($apps) as $app) {
-            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
-                if ($server->getNodeName() === $nodeName) {
-                    $this->stopServer($server);
-                    $this->removeServer($server);
-                }
-            }
-        }
-    }
 }

@@ -6,6 +6,7 @@ namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use wenbinye\tars\cli\models\Adapter;
 use wenbinye\tars\cli\models\Server;
 
 class ServerListCommand extends AbstractCommand
@@ -35,16 +36,15 @@ class ServerListCommand extends AbstractCommand
 
     private function listServers(): void
     {
-        $table = $this->createTable(['Server']);
         $includeTars = $this->input->getOption('all');
 
         foreach ($this->getTarsClient()->getServerNames() as $server) {
             if (!$includeTars && 'tars' === $server->getApplication()) {
                 continue;
             }
-            $table->addRow([(string) $server]);
+            $rows[] = [(string) $server];
         }
-        $table->render();
+        $this->writeTable(['Server'], $rows);
     }
 
     private function listNodeServers(string $nodeName): void
@@ -92,6 +92,27 @@ class ServerListCommand extends AbstractCommand
      */
     private function showServers(array $servers): void
     {
+        $names = array_unique(array_map(function (Server $server) {
+            return (string) $server->getServer();
+        }, $servers));
+        if (1 === count($names) && $this->isJson()) {
+            $server = $servers[0];
+            $adapters = $this->getTarsClient()->getAdapters($server->getId());
+            $this->output->write(json_encode([
+                (string) $server->getServer() => [
+                    'server_type' => $server->getServerType(),
+                    'template_name' => $server->getTemplateName(),
+                    'nodes' => array_map(function (Server $server) {
+                        return $server->getNodeName();
+                    }, $servers),
+                    'adapters' => array_map(function (Adapter $adapter) {
+                        return $adapter->toArray();
+                    }, $adapters),
+                ],
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+            return;
+        }
         $rows = [];
         foreach ($servers as $server) {
             $rows[] = [

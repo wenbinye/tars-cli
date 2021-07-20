@@ -183,6 +183,13 @@ class Adapter
         return $this;
     }
 
+    public function getObjName(): string
+    {
+        $parts = explode('.', $this->name);
+
+        return preg_replace('/Adapter$/', '', end($parts));
+    }
+
     public static function fromArray($info): self
     {
         $adapter = new self();
@@ -199,5 +206,19 @@ class Adapter
         $adapter->handleGroup = $info['handlegroup'];
 
         return $adapter;
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'obj_name' => $this->getObjName(),
+            'port' => $this->endpoint->getPort(),
+            'port_type' => $this->endpoint->getProtocol(),
+            'protocol' => $this->getProtocol(),
+            'thread_num' => $this->getThreadNum(),
+            'max_connections' => $this->getMaxConnections(),
+            'queuecap' => $this->getQueueCapacity(),
+            'queuetimeout' => $this->getQueueTimeout(),
+        ];
     }
 }

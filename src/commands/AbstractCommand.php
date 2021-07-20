@@ -163,7 +163,7 @@ abstract class AbstractCommand extends Command
             ->setCommand($cmd)
             ->setOnSuccess(function ($statusInfo) use ($server, $cmd) {
                 $this->io->text((string) $statusInfo);
-                $this->io->success("Server $server was {$cmd}ed!");
+                $this->io->success("Server $server apply {$cmd} successfully!");
             })
             ->setOnFail(function ($statusInfo) use ($server, $cmd) {
                 $this->io->error((string) $statusInfo);
@@ -196,6 +196,114 @@ abstract class AbstractCommand extends Command
         $this->runOnServer($server, 'undeploy_tars');
     }
 
+    protected function removeServerOnNode(string $nodeName): void
+    {
+        $apps = [];
+        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
+            $apps[$serverName->getApplication()] = true;
+        }
+        foreach (array_keys($apps) as $app) {
+            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
+                if ($server->getNodeName() === $nodeName) {
+                    $this->stopServer($server);
+                    $this->removeServer($server);
+                }
+            }
+        }
+    }
+
+    protected function scaleUpFromNode(string $fromNode, string $node, bool $patch): void
+    {
+        $apps = [];
+        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
+            $apps[$serverName->getApplication()] = true;
+        }
+        foreach (array_keys($apps) as $app) {
+            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
+                if ($server->getNodeName() === $fromNode) {
+                    $found = false;
+                    foreach ($this->getTarsClient()->getServers((string) $server->getServer()) as $runningServer) {
+                        if ($runningServer->getNodeName() === $node) {
+                            $this->io->note("$runningServer already exist");
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $this->scaleUp($server, $node, $patch);
+                    }
+                }
+            }
+        }
+    }
+
+    protected function scaleUp(Server $server, string $node, bool $patch): void
+    {
+        $adapterPorts = [];
+        foreach ($this->getTarsClient()->getAdapters($server->getId()) as $adapter) {
+            $adapterPorts[$adapter->getName()] = $adapter->getEndpoint()->getPort();
+        }
+        $result = $this->getTarsClient()->postJson('expand_server_preview', [
+            'application' => $server->getApplication(),
+            'server_name' => $server->getServerName(),
+            'set' => '',
+            'node_name' => $server->getNodeName(),
+            'expand_nodes' => [$node],
+            'enable_set' => false,
+            'set_name' => '',
+            'set_area' => '',
+            'set_group' => '',
+            'copy_node_config' => true,
+            'nodeName' => [],
+        ]);
+
+        $adapters = [];
+        foreach ($result as $adapter) {
+            $adapters[] = [
+                'bind_ip' => $node,
+                'node_name' => $node,
+                'obj_name' => $adapter['obj_name'],
+                'port' => $adapterPorts[$server->getServer().'.'.$adapter['obj_name'].'Adapter'],
+            ];
+        }
+
+        $this->getTarsClient()->postJson('expand_server', [
+            'application' => $server->getApplication(),
+            'server_name' => $server->getServerName(),
+            'set' => '',
+            'node_name' => $server->getNodeName(),
+            'copy_node_config' => true,
+            'expand_preview_servers' => $adapters,
+        ]);
+        $this->io->success("成功扩容 {$server} 到 $node");
+
+        if (!$patch) {
+            return;
+        }
+
+        $newServer = null;
+        foreach ($this->getTarsClient()->getServers((string) $server->getServer()) as $new) {
+            if ($new->getNodeName() === $node) {
+                $newServer = $new;
+                break;
+            }
+        }
+        if (null !== $newServer) {
+            $ret = $this->getTarsClient()->get('server_patch_list', [
+                'application' => $server->getApplication(),
+                'module_name' => $server->getServerName(),
+                'page_size' => 1,
+            ]);
+            if (!empty($ret)) {
+                $patchId = $ret['rows'][0]['id'];
+                $this->io->success("发布代码 $patchId 到 {$newServer}");
+                $this->applyPatch($patchId, $newServer);
+            }
+        } else {
+            $this->io->error('无法查询到服务');
+        }
+    }
+
     abstract protected function handle(): void;
 
     protected function writeTable(array $header, array $rows, ?string $footer = null): void
@@ -222,5 +330,10 @@ abstract class AbstractCommand extends Command
     protected function isAscii(): bool
     {
         return 'ascii' === $this->input->getOption('format');
+    }
+
+    protected function isJson(): bool
+    {
+        return 'json' === $this->input->getOption('format');
     }
 }

@@ -6,7 +6,6 @@ namespace wenbinye\tars\cli\commands;
 
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
-use wenbinye\tars\cli\models\Server;
 
 class ScaleUpCommand extends AbstractCommand
 {
@@ -23,8 +22,9 @@ class ScaleUpCommand extends AbstractCommand
     protected function handle(): void
     {
         $serverOrNode = $this->input->getArgument('server');
+        $patch = !$this->input->getOption('no-patch');
         if ($this->getTarsClient()->hasNode($serverOrNode)) {
-            $this->scaleUpFromNode($serverOrNode, $this->getNode());
+            $this->scaleUpFromNode($serverOrNode, $this->getNode(), $patch);
         } else {
             $servers = $this->getTarsClient()->getServers($serverOrNode);
             $usedNodes = [];
@@ -34,99 +34,7 @@ class ScaleUpCommand extends AbstractCommand
             $server = $servers[0];
 
             $node = $this->getNode($usedNodes);
-            $this->scaleUp($server, $node);
-        }
-    }
-
-    private function scaleUpFromNode(string $fromNode, string $node): void
-    {
-        $apps = [];
-        foreach ($this->getTarsClient()->getServerNames() as $serverName) {
-            $apps[$serverName->getApplication()] = true;
-        }
-        foreach (array_keys($apps) as $app) {
-            foreach ($this->getTarsClient()->getAllServers($app) as $server) {
-                if ($server->getNodeName() === $fromNode) {
-                    $found = false;
-                    foreach ($this->getTarsClient()->getServers((string) $server->getServer()) as $runningServer) {
-                        if ($runningServer->getNodeName() === $node) {
-                            $this->io->note("$runningServer already exist");
-                            $found = true;
-                            break;
-                        }
-                    }
-                    if (!$found) {
-                        $this->scaleUp($server, $node);
-                    }
-                }
-            }
-        }
-    }
-
-    private function scaleUp(Server $server, string $node): void
-    {
-        $adapterPorts = [];
-        foreach ($this->getTarsClient()->getAdapters($server->getId()) as $adapter) {
-            $adapterPorts[$adapter->getName()] = $adapter->getEndpoint()->getPort();
-        }
-        $result = $this->getTarsClient()->postJson('expand_server_preview', [
-            'application' => $server->getApplication(),
-            'server_name' => $server->getServerName(),
-            'set' => '',
-            'node_name' => $server->getNodeName(),
-            'expand_nodes' => [$node],
-            'enable_set' => false,
-            'set_name' => '',
-            'set_area' => '',
-            'set_group' => '',
-            'copy_node_config' => true,
-            'nodeName' => [],
-        ]);
-
-        $adapters = [];
-        foreach ($result as $adapter) {
-            $adapters[] = [
-                'bind_ip' => $node,
-                'node_name' => $node,
-                'obj_name' => $adapter['obj_name'],
-                'port' => $adapterPorts[$server->getServer().'.'.$adapter['obj_name'].'Adapter'],
-            ];
-        }
-
-        $this->getTarsClient()->postJson('expand_server', [
-            'application' => $server->getApplication(),
-            'server_name' => $server->getServerName(),
-            'set' => '',
-            'node_name' => $server->getNodeName(),
-            'copy_node_config' => true,
-            'expand_preview_servers' => $adapters,
-        ]);
-        $this->io->success("成功扩容 {$server} 到 $node");
-
-        if ($this->input->getOption('no-patch')) {
-            return;
-        }
-
-        $newServer = null;
-        foreach ($this->getTarsClient()->getServers((string) $server->getServer()) as $new) {
-            if ($new->getNodeName() === $node) {
-                $newServer = $new;
-                break;
-            }
-        }
-        if (null !== $newServer) {
-            $ret = $this->getTarsClient()->get('server_patch_list', [
-                'application' => $server->getApplication(),
-                'module_name' => $server->getServerName(),
-                'page_size' => 1,
-            ]);
-            if (!empty($ret)) {
-                $patchId = $ret['rows'][0]['id'];
-                $this->io->success("发布代码 $patchId 到 {$newServer}");
-                $this->applyPatch($patchId, $newServer);
-            }
-        } else {
-            $this->io->error('无法查询到服务');
+            $this->scaleUp($server, $node, $patch);
         }
     }
 
